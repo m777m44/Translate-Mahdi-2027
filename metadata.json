@@ -1,0 +1,11 @@
+{
+  "name": "Remix Mahdi Translate Pro",
+  "description": "An advanced AI-powered translation application with real-time text, voice, and image translation, featuring custom themes and offline capabilities.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
