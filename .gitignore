@@ -25,3 +25,7 @@ dist-ssr
 
 # Lockfile convention for this repo is bun.lock (see bun.lock)
 package-lock.json
+
+# Environment secrets (never commit the API key)
+.env
+.env.local
