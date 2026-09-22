@@ -47,6 +47,14 @@ import { HandwritingModal } from './components/HandwritingModal.tsx';
 import { GoogleTranslateResultView } from './components/GoogleTranslateResultView.tsx';
 import { AdvancedTwoBoxLayout } from './components/AdvancedTwoBoxLayout.tsx';
 import { GoogleAuthModal, GoogleUser } from './components/GoogleAuthModal.tsx';
+import { InstallAppButton } from './components/InstallAppButton.tsx';
+import {
+  syncHistory,
+  getSignedInUser,
+  signOutUser as cloudSignOut,
+  readCloudStatus,
+  CloudHistoryItem,
+} from './cloudSyncService.ts';
 import { MoreTranslation, WordDefinition } from './types.ts';
 import { 
   Languages, 
@@ -996,15 +1004,25 @@ export const App: React.FC = () => {
       lastTranslatedText.current = '';
       return;
     }
-    // Instant 0ms response from rich offline dictionary
-    const instant = translateOffline(newText.trim(), sourceLang, targetLang);
-    if (instant && instant.confidence === 'exact') {
+    // Instant 0ms preview from the local dictionary.
+    //
+    // IMPORTANT: this is only a *preview*. Marking it as the last translated
+    // text used to cancel the debounced AI request, so anything the local
+    // dictionary knew ("hello", "thank you") never reached the neural engine.
+    // We now only claim the text when we are genuinely offline.
+    const offlineNow = forceOffline || !navigator.onLine;
+    const instant = translateOffline(newText.trim(), sourceLang, targetLang, {
+      domain: selectedDomain,
+      dialect: selectedDialect,
+      tone: selectedTone,
+    });
+    if (instant && instant.confidence !== 'fallback' && instant.translation) {
       setResultText(instant.translation);
       setTransliteration(instant.transliteration || '');
       setDetectedLangBanner(instant.detectedLanguageName || '');
       setMoreTranslations(instant.moreTranslations || []);
       setDefinitions(instant.definitions || []);
-      lastTranslatedText.current = newText.trim();
+      if (offlineNow) lastTranslatedText.current = newText.trim();
     }
   };
 
@@ -1016,6 +1034,79 @@ export const App: React.FC = () => {
     setMoreTranslations([]);
     setDefinitions([]);
     lastTranslatedText.current = '';
+  };
+
+  /* ------------------------- Cloud (Firestore) sync ----------------------- */
+
+  const toCloud = (item: TranslationHistoryItem): CloudHistoryItem => ({
+    id: item.id,
+    sourceText: item.sourceText,
+    translatedText: item.translatedText,
+    sourceLang: item.sourceLang,
+    targetLang: item.targetLang,
+    domain: item.domain,
+    dialect: item.dialect,
+    tone: item.tone,
+    favorites: Boolean(item.isFavorite),
+    timestamp: new Date(item.timestamp).toISOString(),
+  });
+
+  const fromCloud = (item: CloudHistoryItem): TranslationHistoryItem => ({
+    id: item.id,
+    sourceText: item.sourceText,
+    translatedText: item.translatedText,
+    sourceLang: item.sourceLang,
+    targetLang: item.targetLang,
+    domain: item.domain as any,
+    dialect: item.dialect as any,
+    tone: item.tone as any,
+    isFavorite: Boolean(item.favorites),
+    timestamp: new Date(item.timestamp).getTime() || Date.now(),
+  });
+
+  const isCloudSignedIn = Boolean(googleUser) && Boolean(getSignedInUser());
+
+  // Two-way merge with Firestore right after a cloud login.
+  const performCloudSync = useCallback(async (silent = false) => {
+    if (!isCloudSignedIn) return;
+    try {
+      const { merged } = await syncHistory(history.map(toCloud));
+      const mergedLocal = merged.map(fromCloud);
+      setHistory(mergedLocal);
+      if (!silent) showToast(`تمت المزامنة السحابية (${mergedLocal.length} عنصر) ✓`);
+    } catch (e) {
+      if (!silent) showToast('تعذرت المزامنة السحابية — سيُعاد لاحقاً');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCloudSignedIn, history, showToast]);
+
+  // Debounced background push so every new translation backs up to the account.
+  useEffect(() => {
+    if (!isCloudSignedIn) return;
+    const t = window.setTimeout(() => {
+      syncHistory(history.map(toCloud)).catch(() => {});
+    }, 1500);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [history, isCloudSignedIn]);
+
+  const handleGoogleLogin = (user: GoogleUser) => {
+    setGoogleUser(user);
+    try {
+      localStorage.setItem('mahdi_google_user', JSON.stringify(user));
+    } catch {}
+    showToast(`مرحباً ${user.name} 👋`);
+    // If this is a real cloud account, pull + merge the user's history.
+    if (getSignedInUser()) performCloudSync(true);
+  };
+
+  const handleGoogleLogout = async () => {
+    setGoogleUser(null);
+    try {
+      localStorage.removeItem('mahdi_google_user');
+    } catch {}
+    await cloudSignOut().catch(() => {});
+    showToast('تم تسجيل الخروج');
   };
 
   const hasActiveText = Boolean(inputText.trim() || resultText);
@@ -1086,6 +1177,9 @@ export const App: React.FC = () => {
             >
               <Palette size={17} />
             </button>
+
+            {/* Install / APK shortcut — hides itself when running as an installed app */}
+            <InstallAppButton onShowToast={showToast} className="!h-8 !px-2 sm:!px-2.5 rounded-full text-[11px]" />
 
             <button
               onClick={() => setIsProSettingsOpen(true)}
@@ -1686,6 +1780,17 @@ export const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Google account + cloud sync modal (real Firebase when configured) */}
+      <GoogleAuthModal
+        isOpen={isGoogleAuthOpen}
+        onClose={() => setIsGoogleAuthOpen(false)}
+        currentUser={googleUser}
+        onLogin={handleGoogleLogin}
+        onLogout={handleGoogleLogout}
+        starredCount={favorites.length}
+        historyCount={history.length}
+      />
     </div>
   );
 };

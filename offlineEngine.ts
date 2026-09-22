@@ -28,6 +28,8 @@ export interface DictionaryEntry {
   it?: string;
   zh?: string;
   ja?: string;
+  /** Optional dialect-specific renderings of the target value (e.g. ar-iq, ar-eg). */
+  dialects?: Record<string, string>;
 }
 
 export const OFFLINE_DICTIONARY: DictionaryEntry[] = [
@@ -110,38 +112,20 @@ export const OFFLINE_DICTIONARY: DictionaryEntry[] = [
   { en: 'hundred', ar: 'مئة', fr: 'cent', es: 'cien', de: 'hundert', tr: 'yüz', ru: 'сто', it: 'cento', zh: '百', ja: '百' },
   { en: 'thousand', ar: 'ألف', fr: 'mille', es: 'mil', de: 'tausend', tr: 'bin', ru: 'тысяча', it: 'mille', zh: '千', ja: '千' },
 
-  // Dialect dictionary & Slang expressions
-  { en: 'how are you', ar: 'شلونك', fr: 'comment ça va' }, // عراقي / خليجي
-  { en: 'how are you', ar: 'ازيك', fr: 'comment vas-tu' }, // مصري
-  { en: 'how are you', ar: 'كيفك', fr: 'comment vas-tu' }, // شامي
-  { en: 'how are you', ar: 'كيداير', fr: 'comment vas-tu' }, // مغربي
-  { en: 'what do you want', ar: 'شنو تريد', fr: 'que veux-tu' }, // عراقي
-  { en: 'what do you want', ar: 'عايز ايه', fr: 'que veux-tu' }, // مصري
-  { en: 'what do you want', ar: 'شو بدك', fr: 'que veux-tu' }, // شامي
-  { en: 'what do you want', ar: 'وش تبي', fr: 'que veux-tu' }, // خليجي
-  { en: 'i want', ar: 'أريد', fr: 'je veux' },
-  { en: 'i want', ar: 'عايز', fr: 'je veux' },
-  { en: 'i want', ar: 'بدي', fr: 'je veux' },
-  { en: 'i want', ar: 'بغيت', fr: 'je veux' },
-  { en: 'very much', ar: 'وايد', fr: 'beaucoup' },
-  { en: 'very much', ar: 'حيل', fr: 'beaucoup' },
-  { en: 'very much', ar: 'أوي', fr: 'beaucoup' },
-  { en: 'very much', ar: 'كتير', fr: 'beaucoup' },
-  { en: 'very much', ar: 'بزاف', fr: 'beaucoup' },
-  { en: 'now', ar: 'هسة', fr: 'maintenant' },
-  { en: 'now', ar: 'دلوقتي', fr: 'maintenant' },
-  { en: 'now', ar: 'الحين', fr: 'maintenant' },
-  { en: 'now', ar: 'دابا', fr: 'maintenant' },
-  { en: 'good', ar: 'زين', fr: 'bon' },
-  { en: 'good', ar: 'كويس', fr: 'bon' },
-  { en: 'good', ar: 'منيح', fr: 'bon' },
-  { en: 'good', ar: 'زوين', fr: 'bon' },
-  { en: 'what is this', ar: 'شنو هذا', fr: 'qu\'est-ce que c\'est' },
-  { en: 'what is this', ar: 'ايه ده', fr: 'qu\'est-ce que c\'est' },
-  { en: 'what is this', ar: 'شو هادا', fr: 'qu\'est-ce que c\'est' },
-  { en: 'there is nothing', ar: 'ماكو شي', fr: 'il n\'y a rien' },
-  { en: 'there is nothing', ar: 'مفيش حاجة', fr: 'il n\'y a rien' },
-  { en: 'there is nothing', ar: 'ما في شي', fr: 'il n\'y a rien' },
+  // Dialect dictionary & slang — one entry per meaning, dialect variants kept
+  // separate so standard Arabic never leaks a dialect word by accident.
+  { en: 'how are you', ar: 'كيف حالك', fr: 'comment ça va', dialects: { 'ar-iq': 'شلونك', 'ar-gulf': 'شلونك', 'ar-eg': 'ازيك', 'ar-sy': 'كيفك', 'ar-ma': 'كيداير' } },
+  { en: 'what do you want', ar: 'ماذا تريد', fr: 'que veux-tu', dialects: { 'ar-iq': 'شنو تريد', 'ar-eg': 'عايز ايه', 'ar-sy': 'شو بدك', 'ar-gulf': 'وش تبي' } },
+  { en: 'i want', ar: 'أريد', fr: 'je veux', dialects: { 'ar-eg': 'عايز', 'ar-sy': 'بدي', 'ar-ma': 'بغيت', 'ar-iq': 'أريد', 'ar-gulf': 'أبغى' } },
+  { en: 'very much', ar: 'كثيراً', fr: 'beaucoup', dialects: { 'ar-gulf': 'وايد', 'ar-eg': 'أوي', 'ar-sy': 'كتير', 'ar-ma': 'بزاف', 'ar-iq': 'حيل' } },
+  { en: 'now', ar: 'الآن', fr: 'maintenant', dialects: { 'ar-iq': 'هسة', 'ar-eg': 'دلوقتي', 'ar-gulf': 'الحين', 'ar-ma': 'دابا', 'ar-sy': 'هلّق' } },
+  { en: 'good', ar: 'جيد', fr: 'bon', dialects: { 'ar-iq': 'زين', 'ar-eg': 'كويس', 'ar-sy': 'منيح', 'ar-ma': 'زوين' } },
+  { en: 'what is this', ar: 'ما هذا', fr: 'qu\'est-ce que c\'est', dialects: { 'ar-iq': 'شنو هذا', 'ar-eg': 'ايه ده', 'ar-sy': 'شو هادا' } },
+  { en: 'there is nothing', ar: 'لا يوجد شيء', fr: 'il n\'y a rien', dialects: { 'ar-iq': 'ماكو شي', 'ar-eg': 'مفيش حاجة', 'ar-sy': 'ما في شي' } },
+  { en: 'where are you', ar: 'أين أنت', fr: 'où es-tu', dialects: { 'ar-iq': 'وينك', 'ar-eg': 'انت فين', 'ar-sy': 'وينك' } },
+  { en: 'i love you', ar: 'أحبك', fr: 'je t\'aime', dialects: { 'ar-iq': 'أحبك', 'ar-eg': 'بحبك', 'ar-sy': 'بحبك', 'ar-ma': 'كنبغيك' } },
+  { en: 'see you later', ar: 'أراك لاحقاً', fr: 'à plus tard', dialects: { 'ar-iq': 'أشوفك بعدين', 'ar-eg': 'أشوفك بعدين' } },
+  { en: 'no problem', ar: 'لا مشكلة', fr: 'pas de problème', dialects: { 'ar-iq': 'ماكو مشكلة', 'ar-eg': 'مفيش مشكلة' } },
 
   // Specialized Domains (Medical, Legal, Technical, Religious)
   { en: 'artificial intelligence', ar: 'ذكاء اصطناعي', fr: 'intelligence artificielle', es: 'inteligencia artificial', de: 'künstliche intelligenz' },
@@ -197,6 +181,12 @@ export function translateOffline(
   if (!text || !text.trim()) {
     return { translation: '', confidence: 'exact' };
   }
+
+  // Accept both the object form and the legacy positional form.
+  const options: OfflineTranslateOptions =
+    typeof optionsOrDomain === 'string'
+      ? { domain: optionsOrDomain, dialect: _dialect, tone: _tone }
+      : optionsOrDomain || {};
 
   const cleanInput = text.trim();
   const actualFromLang = (fromLang === 'auto' || !fromLang) ? detectLanguageFromText(cleanInput) : fromLang;
@@ -327,73 +317,146 @@ export function translateOffline(
     };
   }
 
-  // 1. Direct phrase lookup
-  for (const entry of OFFLINE_DICTIONARY) {
-    const fromVal = (entry as any)[actualFromLang];
-    const toVal = (entry as any)[toLang];
-
-    if (fromVal && toVal && normalizeText(fromVal) === normalizedInput) {
-      const isHi = normalizedInput === 'hi' || normalizedInput === 'hello';
-      return { 
-        translation: toVal,
-        transliteration: toVal === 'أهلاً' ? 'ahlaan' : toVal === 'مرحباً' ? 'marhaban' : '',
-        detectedLanguageName: actualFromLang === 'en' ? 'الإنجليزية، تم رصدها' : actualFromLang === 'ar' ? 'العربية، تم رصدها' : '',
-        moreTranslations: isHi ? [
-          { phrase: 'مرحبا!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Welcome!', 'Hello!', 'Hi!', 'Hallo!'] },
-          { phrase: 'أهلا!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Hi!', 'Hello!', 'Hallo!'] },
-          { phrase: 'هاي هتاف للفت الانتباه!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Hi!', 'Hello!'] }
-        ] : [],
-        definitions: isHi ? [
-          { partOfSpeech: 'صيغة تعجب', definition: 'used as a friendly greeting or to attract attention.', example: '"Hi there. How was the flight?"', number: 1 },
-          { partOfSpeech: 'اختصار', definition: 'Hawaii (in official postal use).', number: 1 }
-        ] : [],
-        confidence: 'exact',
-        engineNotice: 'تمت الترجمة بدقة تامة عبر حزمة اللغات المحلية (Mahdi Offline Engine)' 
-      };
-    }
+  // 1. Whole-phrase lookup — dialect-aware, so "how are you" with the Egyptian
+  //    dialect returns "ازيك" instead of the standard form.
+  const index = getPhraseIndex(actualFromLang, toLang, options.dialect);
+  const exactMatch = index.get(normalizedInput);
+  if (exactMatch) {
+    const isHi = normalizedInput === 'hi' || normalizedInput === 'hello';
+    return {
+      translation: exactMatch,
+      transliteration: exactMatch === 'أهلاً' ? 'ahlaan' : exactMatch === 'مرحباً' ? 'marhaban' : '',
+      detectedLanguageName: detectedLanguageLabel(actualFromLang),
+      moreTranslations: isHi ? [
+        { phrase: 'مرحبا!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Welcome!', 'Hello!', 'Hi!', 'Hallo!'] },
+        { phrase: 'أهلا!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Hi!', 'Hello!', 'Hallo!'] },
+        { phrase: 'هاي هتاف للفت الانتباه!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Hi!', 'Hello!'] }
+      ] : [],
+      definitions: isHi ? [
+        { partOfSpeech: 'صيغة تعجب', definition: 'used as a friendly greeting or to attract attention.', example: '"Hi there. How was the flight?"', number: 1 },
+        { partOfSpeech: 'اختصار', definition: 'Hawaii (in official postal use).', number: 1 }
+      ] : [],
+      confidence: 'exact',
+      engineNotice: 'تمت الترجمة بدقة تامة عبر حزمة اللغات المحلية (Mahdi Offline Engine)'
+    };
   }
 
-  // 2. Multi-word segmentation & dictionary matching
-  const words = cleanInput.split(/\s+/);
-  const translatedWords: string[] = [];
-  let matchCount = 0;
+  // 2. Greedy longest-match segmentation.
+  //
+  // The previous implementation matched ONE word at a time, so a dictionary
+  // phrase such as "thank you" / "how are you" never matched inside a longer
+  // sentence ("how are you today" returned the source text unchanged). We now
+  // walk the sentence and try the longest dictionary phrase first (5 words down
+  // to 1), which makes whole sentences translate instead of a single word.
+  const words = cleanInput.split(/(\s+)/).filter(t => t.length > 0);
+  const out: string[] = [];
+  let matchedWords = 0;
+  const totalWords = words.filter(t => !/^\s+$/.test(t)).length;
 
-  for (const word of words) {
-    const cleanWord = normalizeText(word);
-    let matchedWord: string | null = null;
+  for (let i = 0; i < words.length; i++) {
+    const token = words[i];
+    if (/^\s+$/.test(token)) {
+      out.push(token); // keep the original spacing/line breaks intact
+      continue;
+    }
+    // Collect the next up-to-MAX_PHRASE_WORDS meaningful tokens.
+    const upcoming: { idx: number; norm: string }[] = [];
+    for (let j = i; j < words.length && upcoming.length < MAX_PHRASE_WORDS; j++) {
+      if (/^\s+$/.test(words[j])) continue;
+      upcoming.push({ idx: j, norm: normalizeText(words[j]) });
+    }
 
-    for (const entry of OFFLINE_DICTIONARY) {
-      const fromVal = (entry as any)[actualFromLang];
-      const toVal = (entry as any)[toLang];
-
-      if (fromVal && toVal && normalizeText(fromVal) === cleanWord) {
-        matchedWord = toVal;
-        matchCount++;
+    let matched = false;
+    for (let n = upcoming.length; n >= 1; n--) {
+      const key = upcoming.slice(0, n).map(u => u.norm).join(' ');
+      const hit = index.get(key);
+      if (hit) {
+        out.push(hit);
+        i = upcoming[n - 1].idx; // skip the consumed tokens
+        matchedWords += n;
+        matched = true;
         break;
       }
     }
 
-    if (matchedWord) {
-      translatedWords.push(matchedWord);
-    } else {
-      // Keep original word if not in dictionary
-      translatedWords.push(word);
-    }
+    if (!matched) out.push(token); // unknown word: keep it verbatim
   }
 
-  if (matchCount > 0) {
+  const translation = out.join('').replace(/\s{2,}/g, ' ').trim();
+  const coverage = totalWords === 0 ? 0 : matchedWords / totalWords;
+
+  if (matchedWords > 0) {
     return {
-      translation: translatedWords.join(' '),
-      confidence: matchCount === words.length ? 'exact' : 'partial',
-      engineNotice: 'تمت الترجمة جزئياً عبر المعجم المحلي المحمل'
+      translation,
+      confidence: coverage >= 1 ? 'exact' : 'partial',
+      detectedLanguageName: detectedLanguageLabel(actualFromLang),
+      engineNotice:
+        coverage >= 1
+          ? 'تمت الترجمة كاملة عبر حزمة اللغات المحلية (Mahdi Offline Engine)'
+          : `تمت ترجمة ${matchedWords} من ${totalWords} كلمة عبر المعجم المحلي — بقية النص محفوظة كما هي`,
     };
   }
 
-  // 3. Fallback: Provide a clean transliteration or offline marker
+  // 3. Fallback: keep the text intact (never drop user input) and say so.
   return {
-    translation: `${cleanInput}`,
+    translation: cleanInput,
     confidence: 'fallback',
-    engineNotice: 'تم تفعيل المحرك المحلي للطوارئ (الكلمة غير مسجلة في الحزمة المحملة)'
+    detectedLanguageName: detectedLanguageLabel(actualFromLang),
+    engineNotice: 'النص غير موجود في الحزمة المحلية — يلزم الاتصال بالإنترنت لترجمته بدقة',
   };
+}
+
+/** Maximum dictionary phrase length (in words) considered during segmentation. */
+const MAX_PHRASE_WORDS = 5;
+
+const PHRASE_INDEX_CACHE = new Map<string, Map<string, string>>();
+
+/**
+ * Builds (and caches) a normalized "source phrase → target phrase" lookup for a
+ * language pair. When a dialect is requested and the dictionary holds a
+ * dialect-specific variant, that variant wins over the standard one.
+ */
+function getPhraseIndex(fromLang: string, toLang: string, dialect?: string): Map<string, string> {
+  const key = `${fromLang}>${toLang}>${dialect || 'standard'}`;
+  const cached = PHRASE_INDEX_CACHE.get(key);
+  if (cached) return cached;
+
+  const index = new Map<string, string>();
+  for (const entry of OFFLINE_DICTIONARY) {
+    const fromVal = (entry as any)[fromLang] as string | undefined;
+    let toVal = (entry as any)[toLang] as string | undefined;
+
+    // Dialect-specific target (e.g. Iraqi/Egyptian/Levantine Arabic).
+    if (dialect && dialect !== 'standard' && (entry as any).dialects) {
+      const dialectValue = (entry as any).dialects[dialect];
+      if (typeof dialectValue === 'string' && dialectValue) toVal = dialectValue;
+    }
+
+    if (!fromVal || !toVal) continue;
+    const norm = normalizeText(fromVal);
+    // A dialect-aware entry may overwrite the standard one; otherwise keep the first.
+    const dialectSpecific = Boolean(dialect && dialect !== 'standard' && (entry as any).dialects?.[dialect]);
+    if (!index.has(norm) || dialectSpecific) index.set(norm, toVal);
+  }
+
+  PHRASE_INDEX_CACHE.set(key, index);
+  return index;
+}
+
+/** Arabic label shown in the "detected language" chip. */
+function detectedLanguageLabel(langCode: string): string {
+  const names: Record<string, string> = {
+    en: 'الإنجليزية، تم رصدها',
+    ar: 'العربية، تم رصدها',
+    fr: 'الفرنسية، تم رصدها',
+    es: 'الإسبانية، تم رصدها',
+    de: 'الألمانية، تم رصدها',
+    tr: 'التركية، تم رصدها',
+    ru: 'الروسية، تم رصدها',
+    it: 'الإيطالية، تم رصدها',
+    zh: 'الصينية، تم رصدها',
+    ja: 'اليابانية، تم رصدها',
+  };
+  return names[langCode] || '';
 }
 

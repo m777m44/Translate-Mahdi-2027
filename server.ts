@@ -87,6 +87,34 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     hasKey: Boolean(process.env.GEMINI_API_KEY),
+    firebase: Boolean(process.env.VITE_FIREBASE_API_KEY && process.env.VITE_FIREBASE_PROJECT_ID),
+  });
+});
+
+/**
+ * Public Firebase web config for cloud sync (history backup tied to the user's
+ * account). These values are safe to expose — Firestore security rules are what
+ * actually protect the data. Never put a service-account key here.
+ */
+app.get('/api/config', (_req, res) => {
+  const apiKey = process.env.VITE_FIREBASE_API_KEY;
+  const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
+  const appId = process.env.VITE_FIREBASE_APP_ID;
+
+  if (!apiKey || !projectId || !appId) {
+    res.json({ firebase: null, message: 'Firebase غير مُعد — المزامنة السحابية معطلة' });
+    return;
+  }
+
+  res.json({
+    firebase: {
+      apiKey,
+      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
+      projectId,
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`,
+      messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+      appId,
+    },
   });
 });
 
