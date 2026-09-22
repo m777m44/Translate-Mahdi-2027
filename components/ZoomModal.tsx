@@ -44,7 +44,7 @@ export const ZoomModal: React.FC<ZoomModalProps> = ({
         dir="rtl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-inherit pb-4">
+        <div className="flex items-center justify-between border-b mt-hairline pb-4">
           <div className="flex items-center gap-2.5">
             <div className={`p-2 rounded-2xl ${currentTheme.primary}`}>
               <SlidersHorizontal size={18} />
@@ -56,7 +56,7 @@ export const ZoomModal: React.FC<ZoomModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 opacity-60 hover:opacity-100 transition-colors"
+            className="p-1.5 rounded-full hover:bg-[var(--mt-surface)] opacity-60 hover:opacity-100 transition-colors"
           >
             <X size={18} />
           </button>
@@ -71,7 +71,7 @@ export const ZoomModal: React.FC<ZoomModalProps> = ({
             {/* Decrease step */}
             <button
               onClick={() => handleApply(tempZoom - 5)}
-              className="p-3 rounded-2xl border border-inherit bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all"
+              className="p-3 rounded-2xl border mt-hairline mt-surface-soft hover:bg-[var(--mt-surface)] active:scale-95 transition-all"
               title="تصغير بمقدار 5%"
             >
               <ZoomOut size={18} />
@@ -92,7 +92,7 @@ export const ZoomModal: React.FC<ZoomModalProps> = ({
                     handleApply(val);
                   }
                 }}
-                className="w-full text-center py-3 px-4 rounded-2xl bg-black/5 dark:bg-white/5 border border-inherit text-2xl font-black focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                className="w-full text-center py-3 px-4 rounded-2xl mt-surface-soft border mt-hairline text-2xl font-black focus:outline-none focus:ring-2 focus:ring-[var(--mt-accent)]"
               />
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold opacity-40 pointer-events-none">
                 %
@@ -102,7 +102,7 @@ export const ZoomModal: React.FC<ZoomModalProps> = ({
             {/* Increase step */}
             <button
               onClick={() => handleApply(tempZoom + 5)}
-              className="p-3 rounded-2xl border border-inherit bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all"
+              className="p-3 rounded-2xl border mt-hairline mt-surface-soft hover:bg-[var(--mt-surface)] active:scale-95 transition-all"
               title="تكبير بمقدار 5%"
             >
               <ZoomIn size={18} />
@@ -114,7 +114,7 @@ export const ZoomModal: React.FC<ZoomModalProps> = ({
         <div className="space-y-2">
           <div className="flex justify-between items-center text-xs opacity-60">
             <span>50% (أصغر)</span>
-            <span className="font-bold text-amber-500">{tempZoom}%</span>
+            <span className="font-bold mt-accent-text">{tempZoom}%</span>
             <span>250% (أكبر)</span>
           </div>
           <input
@@ -124,7 +124,7 @@ export const ZoomModal: React.FC<ZoomModalProps> = ({
             step="1"
             value={tempZoom}
             onChange={(e) => handleApply(parseInt(e.target.value, 10))}
-            className="w-full accent-amber-500 cursor-pointer h-2 bg-black/10 dark:bg-white/10 rounded-lg appearance-none"
+            className="w-full accent-amber-500 cursor-pointer h-2 mt-surface-soft rounded-lg appearance-none"
           />
         </div>
 
@@ -139,7 +139,7 @@ export const ZoomModal: React.FC<ZoomModalProps> = ({
                 className={`py-1.5 rounded-xl text-xs font-bold transition-all ${
                   tempZoom === val
                     ? `${currentTheme.primary} shadow-sm font-black`
-                    : 'bg-black/5 dark:bg-white/5 opacity-70 hover:opacity-100 hover:bg-black/10'
+                    : 'mt-surface-soft  opacity-70 hover:opacity-100 hover:bg-[var(--mt-surface)]'
                 }`}
               >
                 {val}%
@@ -149,7 +149,7 @@ export const ZoomModal: React.FC<ZoomModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-3 border-t border-inherit">
+        <div className="flex items-center justify-between pt-3 border-t mt-hairline">
           <button
             onClick={() => handleApply(100)}
             className="flex items-center gap-1.5 text-xs opacity-60 hover:opacity-100 transition-opacity"

@@ -93,9 +93,12 @@ app.get('/api/health', (req, res) => {
 // Translation Endpoint with multi-model fallback, domain, tone, dialect and analysis support
 app.post('/api/translate', async (req, res) => {
   try {
-    const { text, from, to, domain, tone, dialect, includeAnalysis } = req.body;
+    const { text, from, to, domain, tone, dialect, includeAnalysis, accuracy, engine, preserveFormatting, translateNumbers } = req.body;
     if (!text || typeof text !== 'string') {
       return res.status(400).json({ error: 'Text is required for translation.' });
+    }
+    if (typeof text === 'string' && text.length > 24000) {
+      return res.status(413).json({ error: 'النص طويل جداً (الحد الأقصى 24000 حرف).' });
     }
 
     const ai = getGenAI();
@@ -106,12 +109,37 @@ app.post('/api/translate', async (req, res) => {
     const toneContext = tone && tone !== 'standard' ? `Tone: ${tone}` : '';
     const dialectContext = dialect && dialect !== 'standard' ? `Dialect target: ${dialect}` : '';
 
+    // Precision rules driven by the user's settings panel.
+    const accuracyContext =
+      accuracy === 'fast'
+        ? 'Accuracy mode: FAST — prefer the single most likely rendering, keep it brief.'
+        : accuracy === 'balanced'
+        ? 'Accuracy mode: BALANCED — natural fluency first, literal fidelity second.'
+        : 'Accuracy mode: ULTRA-ACCURATE — verify terminology, idioms, negations, numbers and named entities before answering. Never drop or invent meaning.';
+    const engineContext =
+      engine === 'deepl-style'
+        ? 'Engine style: DeepL-style — document-level fluency and idiomatic phrasing.'
+        : engine === 'offline-local'
+        ? 'Engine style: conservative literal translation.'
+        : 'Engine style: Mahdi Neural — highest quality neural rendering.';
+    const formatRules = [
+      preserveFormatting === false ? 'Flatten line breaks into flowing prose.' : 'Preserve the original line breaks, lists, and paragraph structure exactly.',
+      translateNumbers === false ? 'Keep digits, dates, currencies and measurements in their original form.' : 'Localise digits, dates, currencies and units to the target-language convention.',
+      'Never translate code identifiers, URLs, file paths, or placeholders such as {name} and %s.',
+      'Output ONLY the requested JSON — no markdown fences, no commentary.',
+    ].join('\n');
+
     if (includeAnalysis) {
       const prompt = `You are Mahdi (مهدي), the world's most advanced multilingual neural translator and linguistic expert.
 Translate the text from ${sourceLangPrompt} to ${targetLang}.
 ${domainContext ? `${domainContext}` : ''}
 ${toneContext ? `${toneContext}` : ''}
 ${dialectContext ? `${dialectContext}` : ''}
+${accuracyContext}
+${engineContext}
+
+Formatting & precision rules:
+${formatRules}
 
 CRITICAL: Return a VALID JSON object (and nothing else) with this exact schema:
 {
@@ -158,6 +186,11 @@ Translate the text from ${sourceLangPrompt} to ${targetLang}.
 ${domainContext ? `${domainContext}` : ''}
 ${toneContext ? `${toneContext}` : ''}
 ${dialectContext ? `${dialectContext}` : ''}
+${accuracyContext}
+${engineContext}
+
+Formatting & precision rules:
+${formatRules}
 
 You MUST return a VALID JSON object (and nothing else) with this exact schema:
 {

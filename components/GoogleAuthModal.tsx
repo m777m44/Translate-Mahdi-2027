@@ -103,14 +103,14 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
+      className="mt-modal-backdrop"
       dir="rtl"
     >
       <div 
-        className="w-full max-w-md bg-zinc-900 border border-zinc-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col text-white animate-in zoom-in-95 duration-200"
+        className="w-full max-w-md mt-surface-soft border mt-hairline rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
       >
         {/* Header with Google Logo */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800 bg-zinc-950/40">
+        <div className="flex items-center justify-between px-5 py-4 border-b mt-hairline mt-sheet-header">
           <div className="flex items-center gap-2.5">
             {/* Google G SVG */}
             <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0">
@@ -134,13 +134,13 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
               </svg>
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white flex items-center gap-1.5">
+              <h2 className="text-sm font-bold flex items-center gap-1.5">
                 <span>حساب Google</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400 font-semibold border border-blue-500/30">
+                <span className="text-[10px] px-1.5 py-0.2 rounded mt-accent-soft mt-accent-text font-semibold border border-blue-500/30">
                   رسمي
                 </span>
               </h2>
-              <p className="text-[11px] text-zinc-400">
+              <p className="text-[11px] mt-subtext">
                 {currentUser ? 'تفاصيل الحساب والمزامنة السحابية' : 'اختر حساباً للمتابعة مع تطبيق ترجمة مهدي'}
               </p>
             </div>
@@ -148,7 +148,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-full hover:bg-[var(--mt-surface)] mt-subtext hover:text-[var(--mt-text)] transition-colors"
             title="إغلاق"
           >
             <X size={18} />
@@ -161,9 +161,9 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
             /* Logged in state */
             <div className="space-y-4">
               {/* Profile Card */}
-              <div className="p-4 rounded-2xl bg-zinc-800/80 border border-zinc-700 flex items-center gap-3.5">
+              <div className="p-4 rounded-2xl mt-surface-soft border mt-hairline flex items-center gap-3.5">
                 <div className="relative">
-                  <div className="w-13 h-13 rounded-full bg-gradient-to-tr from-blue-600 to-amber-500 flex items-center justify-center text-white text-lg font-bold shadow-md border-2 border-white/20">
+                  <div className="w-13 h-13 rounded-full bg-gradient-to-tr from-blue-600 to-amber-500 flex items-center justify-center text-lg font-bold shadow-md border-2 mt-hairline">
                     {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'M'}
                   </div>
                   <div className="absolute -bottom-1 -left-1 w-4.5 h-4.5 rounded-full bg-emerald-500 border-2 border-zinc-900 flex items-center justify-center">
@@ -172,14 +172,14 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-white truncate flex items-center gap-1.5">
+                  <div className="text-sm font-bold truncate flex items-center gap-1.5">
                     <span>{currentUser.name}</span>
-                    <ShieldCheck size={15} className="text-emerald-400" />
+                    <ShieldCheck size={15} className="mt-accent-text" />
                   </div>
-                  <div className="text-xs text-zinc-400 font-mono truncate" dir="ltr">
+                  <div className="text-xs mt-subtext font-mono truncate" dir="ltr">
                     {currentUser.email}
                   </div>
-                  <div className="mt-1 flex items-center gap-1.5 text-[11px] text-emerald-400">
+                  <div className="mt-1 flex items-center gap-1.5 text-[11px] mt-accent-text">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     <span>تم تسجيل الدخول بنجاح وحفظ الحساب</span>
                   </div>
@@ -188,27 +188,27 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
 
               {/* Cloud Sync Stats */}
               <div className="grid grid-cols-2 gap-2">
-                <div className="p-3 rounded-xl bg-zinc-800/40 border border-zinc-700/60 text-center">
-                  <div className="flex items-center justify-center gap-1 text-xs text-amber-400 font-semibold mb-1">
-                    <Star size={13} className="fill-amber-400" />
+                <div className="p-3 rounded-xl mt-surface-soft border mt-hairline text-center">
+                  <div className="flex items-center justify-center gap-1 text-xs mt-accent-text font-semibold mb-1">
+                    <Star size={13} className="fill-[var(--mt-accent)]" />
                     <span>المفضلة المحفوظة</span>
                   </div>
-                  <span className="text-base font-bold text-white">{starredCount}</span>
+                  <span className="text-base font-bold">{starredCount}</span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-zinc-800/40 border border-zinc-700/60 text-center">
-                  <div className="flex items-center justify-center gap-1 text-xs text-sky-400 font-semibold mb-1">
+                <div className="p-3 rounded-xl mt-surface-soft border mt-hairline text-center">
+                  <div className="flex items-center justify-center gap-1 text-xs mt-accent-text font-semibold mb-1">
                     <History size={13} />
                     <span>سجل الترجمات</span>
                   </div>
-                  <span className="text-base font-bold text-white">{historyCount}</span>
+                  <span className="text-base font-bold">{historyCount}</span>
                 </div>
               </div>
 
               {/* Synchronization Info */}
-              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 space-y-1">
+              <div className="p-3 rounded-xl mt-accent-soft border border-blue-500/20 text-xs mt-accent-text space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
-                  <CloudCheck size={15} className="text-blue-400" />
+                  <CloudCheck size={15} className="mt-accent-text" />
                   <span>المزامنة السحابية مفعلة تلقائياً</span>
                 </div>
                 <p className="text-[11px] opacity-80 leading-relaxed">
@@ -217,13 +217,13 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
               </div>
 
               {/* Account Actions */}
-              <div className="flex items-center gap-2 pt-2 border-t border-zinc-800">
+              <div className="flex items-center gap-2 pt-2 border-t mt-hairline">
                 <button
                   onClick={() => {
                     onLogout();
                     setShowAddCustom(false);
                   }}
-                  className="flex-1 py-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                  className="flex-1 py-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 mt-danger-text border border-red-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <LogOut size={14} />
                   <span>تسجيل الخروج</span>
@@ -234,7 +234,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                     onLogout();
                     setShowAddCustom(true);
                   }}
-                  className="flex-1 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                  className="flex-1 py-2 px-3 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <UserPlus size={14} />
                   <span>تبديل الحساب</span>
@@ -244,7 +244,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
           ) : (
             /* Not logged in: Choose Account */
             <div className="space-y-3">
-              <div className="text-xs text-zinc-300 pb-1">
+              <div className="text-xs mt-subtext pb-1">
                 حدد أحد الحسابات المتوفرة على هاتفك للمزامنة الفورية:
               </div>
 
@@ -255,23 +255,23 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                     key={acc.id}
                     onClick={() => handleSelectAccount(acc)}
                     disabled={isAuthenticating}
-                    className="w-full p-3 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700/80 hover:border-blue-500/50 flex items-center justify-between text-right transition-all group active:scale-[0.99]"
+                    className="w-full p-3 rounded-2xl mt-surface-soft hover:bg-[var(--mt-surface)] border mt-hairline hover:border-[var(--mt-border-strong)] flex items-center justify-between text-right transition-all group active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shadow shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-sm font-bold shadow shrink-0">
                         {acc.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-white truncate group-hover:text-blue-400 transition-colors">
+                        <div className="text-xs font-bold truncate group-hover:text-[var(--mt-accent)] transition-colors">
                           {acc.name}
                         </div>
-                        <div className="text-[11px] text-zinc-400 font-mono truncate" dir="ltr">
+                        <div className="text-[11px] mt-subtext font-mono truncate" dir="ltr">
                           {acc.email}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 text-zinc-400 group-hover:text-blue-400 transition-colors">
+                    <div className="flex items-center gap-1 mt-subtext group-hover:text-[var(--mt-accent)] transition-colors">
                       <span className="text-[10px] font-semibold hidden sm:inline">دخول</span>
                       <ChevronRight size={16} className="rotate-180" />
                     </div>
@@ -283,14 +283,14 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
               {!showAddCustom ? (
                 <button
                   onClick={() => setShowAddCustom(true)}
-                  className="w-full py-2.5 px-3 rounded-2xl border border-dashed border-zinc-700 hover:border-zinc-500 bg-transparent hover:bg-white/5 text-xs text-zinc-300 font-semibold flex items-center justify-center gap-2 transition-colors"
+                  className="w-full py-2.5 px-3 rounded-2xl border border-dashed mt-hairline hover:border-zinc-500 bg-transparent hover:bg-[var(--mt-surface)] text-xs mt-subtext font-semibold flex items-center justify-center gap-2 transition-colors"
                 >
-                  <UserPlus size={14} className="text-amber-400" />
+                  <UserPlus size={14} className="mt-accent-text" />
                   <span>استخدام حساب Google آخر...</span>
                 </button>
               ) : (
-                <form onSubmit={handleAddCustomAccount} className="p-3.5 rounded-2xl bg-zinc-800/60 border border-zinc-700 space-y-2.5">
-                  <div className="text-xs font-bold text-zinc-200">إدخال بريد Google:</div>
+                <form onSubmit={handleAddCustomAccount} className="p-3.5 rounded-2xl mt-surface-soft border mt-hairline space-y-2.5">
+                  <div className="text-xs font-bold">إدخال بريد Google:</div>
                   <input
                     type="email"
                     required
@@ -298,27 +298,27 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
                     onChange={(e) => setCustomEmail(e.target.value)}
                     placeholder="example@gmail.com"
                     dir="ltr"
-                    className="w-full px-3 py-2 text-xs bg-zinc-900 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500 font-mono"
+                    className="w-full px-3 py-2 text-xs mt-surface-soft border mt-hairline rounded-xl placeholder:opacity-60 focus:outline-none focus:border-[var(--mt-accent)] font-mono"
                   />
                   <input
                     type="text"
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
                     placeholder="الاسم المستعار (اختياري)"
-                    className="w-full px-3 py-2 text-xs bg-zinc-900 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 text-xs mt-surface-soft border mt-hairline rounded-xl placeholder:opacity-60 focus:outline-none focus:border-[var(--mt-accent)]"
                   />
                   <div className="flex items-center gap-2 pt-1">
                     <button
                       type="button"
                       onClick={() => setShowAddCustom(false)}
-                      className="px-3 py-1.5 rounded-xl bg-zinc-700 text-zinc-300 text-xs font-semibold hover:bg-zinc-600"
+                      className="px-3 py-1.5 rounded-xl mt-btn text-xs font-semibold hover:bg-[var(--mt-surface)]"
                     >
                       إلغاء
                     </button>
                     <button
                       type="submit"
                       disabled={isAuthenticating}
-                      className="flex-1 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+                      className="flex-1 py-1.5 rounded-xl bg-blue-600 hover:brightness-110 text-xs font-bold flex items-center justify-center gap-1 transition-colors"
                     >
                       {isAuthenticating ? 'جاري التحقق...' : 'تسجيل الدخول والمتابعة'}
                     </button>
@@ -327,7 +327,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
               )}
 
               {/* Google Security Footer */}
-              <div className="pt-2 text-[10px] text-zinc-500 text-center leading-relaxed flex items-center justify-center gap-1.5 border-t border-zinc-800/80">
+              <div className="pt-2 text-[10px] mt-subtext text-center leading-relaxed flex items-center justify-center gap-1.5 border-t mt-hairline">
                 <ShieldCheck size={12} className="text-emerald-500" />
                 <span>حماية مشفرة عبر خدمات Google Identity. لن يتم مشاركة بياناتك إطلاقاً.</span>
               </div>

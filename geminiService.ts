@@ -8,6 +8,12 @@ export interface TranslateOptions {
   tone?: string;
   dialect?: string;
   includeAnalysis?: boolean;
+  /** 'fast' | 'balanced' | 'ultra-accurate' — controls how much reasoning the model does. */
+  accuracy?: string;
+  /** Preferred engine style. */
+  engine?: string;
+  preserveFormatting?: boolean;
+  translateNumbers?: boolean;
 }
 
 export interface TranslateResult {
@@ -43,6 +49,10 @@ export const translateText = async (
       tone: options.tone,
       dialect: options.dialect,
       includeAnalysis: options.includeAnalysis,
+      accuracy: options.accuracy,
+      engine: options.engine,
+      preserveFormatting: options.preserveFormatting,
+      translateNumbers: options.translateNumbers,
     }),
   });
 

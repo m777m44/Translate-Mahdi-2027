@@ -7,7 +7,11 @@
     "dev": "tsx server.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "verify:themes": "tsx scripts/verify-themes.ts",
+    "check": "npm run verify && npm run lint && npm run build",
+    "verify:app": "tsx scripts/verify-app-render.tsx",
+    "verify": "npm run verify:themes && npm run verify:app"
   },
   "dependencies": {
     "@google/genai": "^1.39.0",

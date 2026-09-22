@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Lockfile convention for this repo is bun.lock (see bun.lock)
+package-lock.json

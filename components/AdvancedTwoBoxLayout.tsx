@@ -144,12 +144,12 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
       {/* Quick Domain & Style Bar Toggle */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full mt-accent-soft mt-accent-text border mt-hairline flex items-center gap-1">
             <Sparkles size={12} />
             <span>الوضع المتقدم (شاشتان متزامنتان)</span>
           </span>
           {detectedLangBanner && (
-            <span className="text-[11px] font-semibold opacity-70 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <span className="text-[11px] font-semibold opacity-70 px-2 py-0.5 rounded-full mt-accent-soft mt-accent-text border border-blue-500/20">
               {detectedLangBanner}
             </span>
           )}
@@ -159,8 +159,8 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
           onClick={() => setShowOptionsBar(!showOptionsBar)}
           className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${
             showOptionsBar 
-              ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-sm' 
-              : 'bg-black/5 dark:bg-white/5 border-inherit/40 text-inherit hover:border-amber-500/50'
+              ? 'mt-btn-primary border-amber-400 shadow-sm' 
+              : 'mt-surface-soft  mt-hairline  hover:border-[var(--mt-border-strong)]'
           }`}
           title="خيارات المجال والنبرة واللهجة"
         >
@@ -172,17 +172,17 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
 
       {/* Domain, Tone & Dialect Collapsible Bar */}
       {showOptionsBar && (
-        <div className="p-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-inherit/40 animate-in fade-in slide-in-from-top-2 duration-200 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+        <div className="p-3 rounded-2xl mt-surface-soft border mt-hairline animate-in fade-in slide-in-from-top-2 duration-200 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
           <div>
             <label className="block text-[10px] font-bold opacity-60 mb-1">مجال الترجمة:</label>
             <select
               value={selectedDomain}
               onChange={(e) => onChangeDomain(e.target.value as DomainCode)}
-              className="w-full px-2.5 py-1.5 rounded-xl bg-black/20 dark:bg-white/10 border border-inherit text-xs font-semibold focus:outline-none focus:border-amber-400"
+              className="w-full px-2.5 py-1.5 rounded-xl mt-surface-soft border mt-hairline text-xs font-semibold focus:outline-none focus:border-[var(--mt-accent)]"
             >
               {DOMAINS.map(d => (
-                <option key={d.code} value={d.code} className="bg-zinc-900 text-white">
-                  {d.name} ({d.nameEn})
+                <option key={d.code} value={d.code}>
+                  {d.icon ? `${d.icon} — ` : ''}{d.nameAr}
                 </option>
               ))}
             </select>
@@ -193,11 +193,11 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
             <select
               value={selectedTone}
               onChange={(e) => onChangeTone(e.target.value as ToneCode)}
-              className="w-full px-2.5 py-1.5 rounded-xl bg-black/20 dark:bg-white/10 border border-inherit text-xs font-semibold focus:outline-none focus:border-amber-400"
+              className="w-full px-2.5 py-1.5 rounded-xl mt-surface-soft border mt-hairline text-xs font-semibold focus:outline-none focus:border-[var(--mt-accent)]"
             >
               {TONES.map(t => (
-                <option key={t.code} value={t.code} className="bg-zinc-900 text-white">
-                  {t.name}
+                <option key={t.code} value={t.code}>
+                  {t.nameAr}
                 </option>
               ))}
             </select>
@@ -208,10 +208,10 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
             <select
               value={selectedDialect}
               onChange={(e) => onChangeDialect(e.target.value as DialectCode)}
-              className="w-full px-2.5 py-1.5 rounded-xl bg-black/20 dark:bg-white/10 border border-inherit text-xs font-semibold focus:outline-none focus:border-amber-400"
+              className="w-full px-2.5 py-1.5 rounded-xl mt-surface-soft border mt-hairline text-xs font-semibold focus:outline-none focus:border-[var(--mt-accent)]"
             >
               {DIALECTS.map(dial => (
-                <option key={dial.code} value={dial.code} className="bg-zinc-900 text-white">
+                <option key={dial.code} value={dial.code} className="mt-surface-soft">
                   {dial.name}
                 </option>
               ))}
@@ -226,9 +226,9 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
         {/* BOX 1: SOURCE TEXT INPUT BOX */}
         <div className={`rounded-3xl p-4 sm:p-5 border shadow-xl flex flex-col justify-between transition-all min-h-[260px] md:min-h-[340px] ${theme.card} ${theme.border}`}>
           {/* Box 1 Header */}
-          <div className="flex items-center justify-between pb-2 border-b border-inherit/30">
+          <div className="flex items-center justify-between pb-2 border-b mt-hairline">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-extrabold text-amber-500">
+              <span className="text-xs font-extrabold mt-accent-text">
                 {sourceLangName}
               </span>
               <span className="text-[10px] opacity-50 font-mono">
@@ -240,14 +240,14 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
             <div className="flex items-center gap-1">
               <button
                 onClick={onPaste}
-                className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-all"
+                className="p-1.5 rounded-full hover:bg-[var(--mt-surface)] transition-all"
                 title="لصق النص"
               >
                 <Clipboard size={15} />
               </button>
               <button
                 onClick={onOpenHandwriting}
-                className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-all"
+                className="p-1.5 rounded-full hover:bg-[var(--mt-surface)] transition-all"
                 title="الكتابة بخط اليد"
               >
                 <Pen size={15} />
@@ -255,7 +255,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
               <button
                 onClick={onToggleListening}
                 className={`p-1.5 rounded-full transition-all ${
-                  isListening ? 'bg-rose-500 text-white animate-pulse' : 'hover:bg-black/10 dark:hover:bg-white/10 text-inherit'
+                  isListening ? 'bg-[var(--mt-danger)]  animate-pulse' : 'hover:bg-[var(--mt-surface)]  '
                 }`}
                 title="إملاء صوتي"
               >
@@ -264,7 +264,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
               {inputText && (
                 <button
                   onClick={onClear}
-                  className="p-1.5 rounded-full hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-all"
+                  className="p-1.5 rounded-full hover:bg-red-500/20 mt-subtext hover:text-[var(--mt-danger)] transition-all"
                   title="مسح النص بالكامل"
                 >
                   <X size={16} />
@@ -289,13 +289,13 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
           </div>
 
           {/* Box 1 Footer Actions */}
-          <div className="flex items-center justify-between pt-2 border-t border-inherit/20 text-xs">
+          <div className="flex items-center justify-between pt-2 border-t mt-hairline text-xs">
             <div className="flex items-center gap-1.5">
               <button
                 onClick={handleCopySourceClick}
                 disabled={!inputText.trim()}
                 className={`p-1.5 rounded-xl transition-all disabled:opacity-30 ${
-                  copiedSource ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-black/10 dark:hover:bg-white/10 text-inherit'
+                  copiedSource ? 'mt-accent-soft mt-accent-text' : 'hover:bg-[var(--mt-surface)]  '
                 }`}
                 title="نسخ النص الأصلي"
               >
@@ -304,7 +304,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
               <button
                 onClick={onSpeakSource}
                 disabled={!inputText.trim()}
-                className="p-1.5 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-all disabled:opacity-30"
+                className="p-1.5 rounded-xl hover:bg-[var(--mt-surface)] transition-all disabled:opacity-30"
                 title="استماع للنص الأصلي"
               >
                 <Volume2 size={14} />
@@ -318,13 +318,13 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
         {/* BOX 2: TARGET TRANSLATION OUTPUT BOX */}
         <div className={`rounded-3xl p-4 sm:p-5 border shadow-xl flex flex-col justify-between transition-all min-h-[260px] md:min-h-[340px] ${theme.card} ${theme.border}`}>
           {/* Box 2 Header */}
-          <div className="flex items-center justify-between pb-2 border-b border-inherit/30">
+          <div className="flex items-center justify-between pb-2 border-b mt-hairline">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-extrabold text-blue-400">
+              <span className="text-xs font-extrabold mt-accent-text">
                 {targetLangName}
               </span>
               {isLoading ? (
-                <span className="text-[10px] text-amber-400 flex items-center gap-1 animate-pulse">
+                <span className="text-[10px] mt-accent-text flex items-center gap-1 animate-pulse">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                   <span>يترجم الآن...</span>
                 </span>
@@ -337,14 +337,14 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
             <div className="flex items-center gap-1">
               <button
                 onClick={onOpenCompareEngines}
-                className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-all"
+                className="p-1.5 rounded-full hover:bg-[var(--mt-surface)] transition-all"
                 title="مقارنة المحركات (Google vs Gemini vs DeepL)"
               >
                 <Scale size={15} />
               </button>
               <button
                 onClick={onOpenAIAnalysis}
-                className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-all"
+                className="p-1.5 rounded-full hover:bg-[var(--mt-surface)] transition-all"
                 title="التحليل اللغوي الذكي وتصحيح القواعد"
               >
                 <BrainCircuit size={15} />
@@ -352,7 +352,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
               <button
                 onClick={onOpenZoom}
                 disabled={!resultText}
-                className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-all disabled:opacity-30"
+                className="p-1.5 rounded-full hover:bg-[var(--mt-surface)] transition-all disabled:opacity-30"
                 title="تكبير ملء الشاشة"
               >
                 <Maximize2 size={15} />
@@ -361,11 +361,11 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
                 onClick={onToggleFavorite}
                 disabled={!resultText}
                 className={`p-1.5 rounded-full transition-all disabled:opacity-30 ${
-                  isFavorite ? 'text-amber-400 fill-amber-400 bg-amber-500/20' : 'hover:bg-black/10 dark:hover:bg-white/10 text-inherit'
+                  isFavorite ? 'mt-accent-text fill-[var(--mt-accent)] mt-accent-soft' : 'hover:bg-[var(--mt-surface)]  '
                 }`}
                 title={isFavorite ? 'إزالة من المفضلة' : 'حفظ في المفضلة'}
               >
-                <Star size={15} className={isFavorite ? 'fill-amber-400' : ''} />
+                <Star size={15} className={isFavorite ? 'fill-[var(--mt-accent)]' : ''} />
               </button>
             </div>
           </div>
@@ -377,13 +377,13 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
                 <textarea
                   value={customTargetText || resultText}
                   onChange={(e) => setCustomTargetText(e.target.value)}
-                  className="w-full p-2.5 rounded-2xl bg-black/20 dark:bg-white/10 text-base font-bold text-inherit border border-inherit/40 focus:outline-none focus:border-amber-400"
+                  className="w-full p-2.5 rounded-2xl mt-surface-soft text-base font-bold border mt-hairline focus:outline-none focus:border-[var(--mt-accent)]"
                   rows={4}
                 />
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => setIsEditingTarget(false)}
-                    className="px-2.5 py-1 rounded-xl bg-white/10 text-xs font-bold text-zinc-300 hover:bg-white/20"
+                    className="px-2.5 py-1 rounded-xl mt-surface-soft text-xs font-bold mt-subtext hover:bg-[var(--mt-surface)]"
                   >
                     إلغاء
                   </button>
@@ -392,7 +392,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
                       setIsEditingTarget(false);
                       onShowToast('تم حفظ التعديل اليدوي للترجمة');
                     }}
-                    className="px-2.5 py-1 rounded-xl bg-amber-500 text-xs font-bold text-zinc-950 hover:bg-amber-400"
+                    className="px-2.5 py-1 rounded-xl bg-amber-500 text-xs font-bold hover:bg-amber-400"
                   >
                     تطبيق
                   </button>
@@ -407,7 +407,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
                     direction: isTargetRTL ? 'rtl' : 'ltr',
                   }}
                   className={`leading-relaxed font-bold break-words select-text ${
-                    resultText ? 'text-inherit cursor-pointer hover:opacity-90' : 'opacity-30 select-none'
+                    resultText ? ' cursor-pointer hover:opacity-90' : 'opacity-30 select-none'
                   }`}
                   title={resultText ? 'انقر لتعديل الترجمة يدوياً' : ''}
                 >
@@ -416,7 +416,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
 
                 {/* Transliteration */}
                 {transliteration && (
-                  <div className="text-xs font-normal text-zinc-400 tracking-wider mt-1">
+                  <div className="text-xs font-normal mt-subtext tracking-wider mt-1">
                     {transliteration}
                   </div>
                 )}
@@ -425,13 +425,13 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
           </div>
 
           {/* Box 2 Footer Actions */}
-          <div className="flex items-center justify-between pt-2 border-t border-inherit/20 text-xs">
+          <div className="flex items-center justify-between pt-2 border-t mt-hairline text-xs">
             <div className="flex items-center gap-1.5">
               <button
                 onClick={handleCopyTargetClick}
                 disabled={!resultText}
                 className={`p-1.5 rounded-xl transition-all disabled:opacity-30 ${
-                  copiedTarget ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-black/10 dark:hover:bg-white/10 text-inherit'
+                  copiedTarget ? 'mt-accent-soft mt-accent-text' : 'hover:bg-[var(--mt-surface)]  '
                 }`}
                 title="نسخ الترجمة"
               >
@@ -440,7 +440,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
               <button
                 onClick={onSpeakTarget}
                 disabled={!resultText}
-                className="p-1.5 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-all disabled:opacity-30"
+                className="p-1.5 rounded-xl hover:bg-[var(--mt-surface)] transition-all disabled:opacity-30"
                 title="استماع إلى الترجمة"
               >
                 <Volume2 size={14} />
@@ -448,7 +448,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
               <button
                 onClick={onShare}
                 disabled={!resultText}
-                className="p-1.5 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-all disabled:opacity-30"
+                className="p-1.5 rounded-xl hover:bg-[var(--mt-surface)] transition-all disabled:opacity-30"
                 title="مشاركة الترجمة"
               >
                 <Share2 size={14} />
@@ -470,14 +470,14 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
       {/* SECONDARY DICTIONARY & ALTERNATIVES SECTION (If available) */}
       {(moreTranslations.length > 0 || definitions.length > 0) && (
         <div className={`p-4 rounded-3xl border ${theme.card} ${theme.border} shadow-lg text-xs space-y-3`}>
-          <div className="flex items-center justify-between border-b border-inherit/30 pb-2">
-            <span className="font-bold flex items-center gap-1.5 text-amber-400">
+          <div className="flex items-center justify-between border-b mt-hairline pb-2">
+            <span className="font-bold flex items-center gap-1.5 mt-accent-text">
               <BookOpen size={15} />
               <span>قاموس الكلمات والترجمات البديلة</span>
             </span>
             <button
               onClick={() => setExpandMore(!expandMore)}
-              className="p-1 text-zinc-400 hover:text-white"
+              className="p-1 mt-subtext hover:text-[var(--mt-text)]"
             >
               {expandMore ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
@@ -494,7 +494,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
                       <div 
                         key={idx}
                         onClick={() => onSelectAlternative && onSelectAlternative(alt.text)}
-                        className="p-1.5 rounded-xl bg-black/10 dark:bg-white/5 hover:bg-amber-500/20 cursor-pointer flex items-center justify-between transition-colors"
+                        className="p-1.5 rounded-xl mt-surface-soft hover:bg-[var(--mt-accent-soft)] cursor-pointer flex items-center justify-between transition-colors"
                       >
                         <span className="font-semibold">{alt.text}</span>
                         <span className="text-[10px] opacity-50">{alt.meaning || alt.pos}</span>
@@ -510,7 +510,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
                   <span className="font-bold text-[11px] opacity-70">تعريفات ومرادفات الكلمة:</span>
                   <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
                     {definitions.map((def, idx) => (
-                      <div key={idx} className="p-2 rounded-xl bg-black/10 dark:bg-white/5 border border-inherit/20 space-y-1">
+                      <div key={idx} className="p-2 rounded-xl mt-surface-soft border mt-hairline space-y-1">
                         <div className="text-[11px] font-medium">{def.definition}</div>
                         {def.synonyms && def.synonyms.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
@@ -518,7 +518,7 @@ export const AdvancedTwoBoxLayout: React.FC<AdvancedTwoBoxLayoutProps> = ({
                               <span 
                                 key={sIdx}
                                 onClick={() => onSelectSynonym && onSelectSynonym(syn)}
-                                className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 hover:bg-blue-500 hover:text-white cursor-pointer text-[10px] font-medium transition-colors"
+                                className="px-2 py-0.5 rounded-full mt-accent-soft mt-accent-text hover:bg-[var(--mt-primary)] hover:text-[var(--mt-on-primary)] cursor-pointer text-[10px] font-medium transition-colors"
                               >
                                 {syn}
                               </span>

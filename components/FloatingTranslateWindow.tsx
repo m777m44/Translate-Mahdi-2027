@@ -164,7 +164,7 @@ export const FloatingTranslateWindow: React.FC<FloatingTranslateWindowProps> = (
           <span className="text-xs font-bold">الترجمة العائمة</span>
           <button 
             onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full opacity-60 hover:opacity-100"
+            className="p-1 hover:bg-[var(--mt-surface)] rounded-full opacity-60 hover:opacity-100"
           >
             <X size={12} />
           </button>
@@ -191,16 +191,16 @@ export const FloatingTranslateWindow: React.FC<FloatingTranslateWindowProps> = (
       <div 
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
-        className="flex items-center justify-between px-4 py-2.5 border-b border-inherit bg-black/10 dark:bg-white/10 cursor-grab active:cursor-grabbing select-none"
+        className="flex items-center justify-between px-4 py-2.5 border-b mt-hairline mt-surface-soft cursor-grab active:cursor-grabbing select-none"
       >
         <div className="flex items-center gap-2">
           <GripHorizontal size={16} className="opacity-40" />
           <span className="text-xs font-bold flex items-center gap-1.5">
-            <Sparkles size={14} className="text-amber-400" />
+            <Sparkles size={14} className="mt-accent-text" />
             <span>نافذة الترجمة العائمة</span>
           </span>
           {detectedName && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400 font-bold">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md mt-accent-soft mt-accent-text font-bold">
               كُشف: {detectedName}
             </span>
           )}
@@ -208,14 +208,14 @@ export const FloatingTranslateWindow: React.FC<FloatingTranslateWindowProps> = (
         <div className="flex items-center gap-1">
           <button
             onClick={() => setIsMinimized(true)}
-            className="p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors opacity-70 hover:opacity-100"
+            className="p-1 rounded-lg hover:bg-[var(--mt-surface)] transition-colors opacity-70 hover:opacity-100"
             title="تصغير"
           >
             <Minus size={14} />
           </button>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors opacity-70 hover:opacity-100"
+            className="p-1 rounded-lg hover:bg-[var(--mt-surface)] transition-colors opacity-70 hover:opacity-100"
             title="إغلاق"
           >
             <X size={14} />
@@ -224,17 +224,17 @@ export const FloatingTranslateWindow: React.FC<FloatingTranslateWindowProps> = (
       </div>
 
       {/* Languages toolbar with Auto Detect */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-inherit bg-black/[0.02]">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b mt-hairline mt-surface-soft">
         <select
           value={fromLang}
           onChange={(e) => setFromLang(e.target.value)}
           className="bg-transparent text-xs font-bold focus:outline-none cursor-pointer py-1 px-1 rounded-lg max-w-[140px]"
         >
-          <option value="auto" className="bg-zinc-800 text-white font-bold">
+          <option value="auto" className="mt-surface-soft font-bold">
             ✨ كشف تلقائي
           </option>
           {languages.map((l) => (
-            <option key={l.code} value={l.code} className="bg-zinc-800 text-white">
+            <option key={l.code} value={l.code} className="mt-surface-soft">
               {l.nativeName}
             </option>
           ))}
@@ -242,7 +242,7 @@ export const FloatingTranslateWindow: React.FC<FloatingTranslateWindowProps> = (
 
         <button
           onClick={handleSwap}
-          className="p-1.5 rounded-xl hover:bg-black/10 dark:hover:bg-white/10 transition-transform active:rotate-180"
+          className="p-1.5 rounded-xl hover:bg-[var(--mt-surface)] transition-transform active:rotate-180"
           title="تبديل اللغات"
         >
           <ArrowRightLeft size={13} />
@@ -254,7 +254,7 @@ export const FloatingTranslateWindow: React.FC<FloatingTranslateWindowProps> = (
           className="bg-transparent text-xs font-bold focus:outline-none cursor-pointer py-1 px-1 rounded-lg text-left max-w-[130px]"
         >
           {languages.map((l) => (
-            <option key={l.code} value={l.code} className="bg-zinc-800 text-white">
+            <option key={l.code} value={l.code} className="mt-surface-soft">
               {l.nativeName}
             </option>
           ))}
@@ -282,7 +282,7 @@ export const FloatingTranslateWindow: React.FC<FloatingTranslateWindowProps> = (
             placeholder="اكتب هنا أو الصق النص للترجمة فوراً..."
             rows={2}
             style={{ fontSize: `${contentFontSize}px` }}
-            className="w-full bg-black/5 dark:bg-white/5 rounded-xl p-2.5 resize-none focus:outline-none border border-inherit placeholder:opacity-40 leading-relaxed transition-all"
+            className="w-full mt-surface-soft rounded-xl p-2.5 resize-none focus:outline-none border mt-hairline placeholder:opacity-40 leading-relaxed transition-all"
           />
           <div className="flex justify-between items-center mt-1">
             <button
@@ -306,7 +306,7 @@ export const FloatingTranslateWindow: React.FC<FloatingTranslateWindowProps> = (
 
         {/* Translation Output Box */}
         <div 
-          className="p-2.5 rounded-xl bg-black/[0.07] dark:bg-white/[0.07] border border-inherit min-h-[60px] relative flex flex-col justify-between"
+          className="p-2.5 rounded-xl mt-surface-soft border mt-hairline min-h-[60px] relative flex flex-col justify-between"
         >
           <div 
             style={{ fontSize: `${contentFontSize}px` }}
@@ -320,7 +320,7 @@ export const FloatingTranslateWindow: React.FC<FloatingTranslateWindowProps> = (
           </div>
 
           {resultText && (
-            <div className="flex items-center justify-end gap-1 pt-1.5 border-t border-inherit/20 mt-1.5">
+            <div className="flex items-center justify-end gap-1 pt-1.5 border-t mt-hairline mt-1.5">
               <button
                 onClick={() => onSpeak(resultText, toLang)}
                 className="p-1 rounded opacity-60 hover:opacity-100 transition-opacity"

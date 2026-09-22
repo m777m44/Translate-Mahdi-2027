@@ -138,7 +138,7 @@ export const ResizeHandle: React.FC<ResizeHandleProps> = ({
       {/* Floating tooltip preview during drag */}
       {isDragging && (
         <div 
-          className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-zinc-900/90 text-amber-300 text-[10px] font-mono whitespace-nowrap shadow-xl border border-amber-500/40 pointer-events-none z-30"
+          className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full mt-surface-soft mt-accent-text text-[10px] font-mono whitespace-nowrap shadow-xl border mt-hairline pointer-events-none z-30"
           dir="ltr"
         >
           ↕ {Math.round(currentHeight)}px • ↔ {Math.round(currentWidth)}% • T:{Math.round(currentFontSize)}px
@@ -152,7 +152,7 @@ export const ResizeHandle: React.FC<ResizeHandleProps> = ({
         className={`cursor-nwse-resize p-1 rounded-md flex items-center justify-center transition-all duration-200 backdrop-blur-xs ${
           isDragging 
             ? 'bg-amber-500 text-black scale-125 shadow-lg shadow-amber-500/40 ring-2 ring-amber-400' 
-            : 'bg-white/10 dark:bg-black/20 text-white/40 hover:text-white hover:bg-amber-500/80 hover:text-black opacity-35 hover:opacity-100 border border-white/10 hover:border-amber-400'
+            : 'mt-surface-soft  text-white/40 hover:text-[var(--mt-text)] hover:bg-amber-500/80 hover:text-black opacity-35 hover:opacity-100 border mt-hairline hover:border-amber-400'
         }`}
       >
         {/* Subtle diagonal micro notch lines */}
