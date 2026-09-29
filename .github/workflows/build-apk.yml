@@ -17,11 +17,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # No `cache:` here — the repo gitignores package-lock.json (bun.lock is the
+      # convention), and setup-node caching requires a committed lockfile.
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       # Repo convention is bun.lock (package-lock.json is gitignored), so use
       # a plain install rather than `npm ci` (which requires a lockfile).
