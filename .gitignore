@@ -29,3 +29,10 @@ package-lock.json
 # Environment secrets (never commit the API key)
 .env
 .env.local
+
+# Android / Capacitor build artefacts (re-created by `npx cap sync android`)
+android/app/src/main/assets/public/
+android/.gradle/
+android/capacitor-cordova-android-plugins/build/
+android/app/build/
+android/build/

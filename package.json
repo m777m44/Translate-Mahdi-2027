@@ -9,12 +9,18 @@
     "start": "node --env-file-if-exists=.env dist/server.cjs",
     "lint": "tsc --noEmit",
     "icons": "node scripts/generate-icons.mjs",
+    "cap:add:android": "cap add android",
+    "cap:sync": "npm run build && cap sync android",
+    "apk:debug": "npm run cap:sync && cd android && ./gradlew assembleDebug",
+    "apk:release": "npm run cap:sync && cd android && ./gradlew assembleRelease",
     "verify:themes": "tsx scripts/verify-themes.ts",
     "check": "npm run verify && npm run lint && npm run build",
     "verify:app": "tsx scripts/verify-app-render.tsx",
     "verify": "npm run verify:themes && npm run verify:app"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
     "@google/genai": "^1.39.0",
     "express": "^5.2.1",
     "firebase": "^12.19.0",
@@ -23,6 +29,7 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "@resvg/resvg-js": "^2.6.2",
     "@types/express": "^5.0.6",
     "@types/node": "^22.14.0",

@@ -1,4 +1,5 @@
 
+import { apiUrl } from './apiBase.ts';
 import { decode, decodeAudioData } from "./utils/audio.ts";
 import { TtsSettings, AIAnalysisResult, MultiEngineComparison, MoreTranslation, WordDefinition } from "./types.ts";
 import { LANG_BCP47_MAP } from "./constants.ts";
@@ -36,7 +37,7 @@ export const translateText = async (
 ): Promise<TranslateResult> => {
   if (!text || !text.trim()) return { translation: "" };
 
-  const response = await fetch("/api/translate", {
+  const response = await fetch(apiUrl("/api/translate"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -84,7 +85,7 @@ export const compareEngines = async (
     return { mahdiNeural: "", deepLStyle: "", standardMt: "" };
   }
 
-  const response = await fetch("/api/compare", {
+  const response = await fetch(apiUrl("/api/compare"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -110,7 +111,7 @@ export const compareEngines = async (
 export const translateImage = async (base64Data: string, targetLang: string): Promise<string> => {
   if (!base64Data) return "";
 
-  const response = await fetch("/api/translate-image", {
+  const response = await fetch(apiUrl("/api/translate-image"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -174,7 +175,7 @@ export const speakText = async (text: string, lang: string, settings: TtsSetting
 
   // 2. Try fetching synthesized neural audio from server
   try {
-    const response = await fetch("/api/tts", {
+    const response = await fetch(apiUrl("/api/tts"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

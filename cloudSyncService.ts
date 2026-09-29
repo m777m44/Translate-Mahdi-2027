@@ -10,6 +10,8 @@
  *   reports a clear state and keeps working from localStorage.
  */
 
+import { apiUrl } from './apiBase.ts';
+
 export interface CloudUser {
   uid: string;
   email?: string | null;
@@ -66,7 +68,7 @@ let configCache: FirebaseWebConfig | null = null;
 export async function getFirebaseConfig(): Promise<FirebaseWebConfig | null> {
   if (configCache) return configCache;
   try {
-    const res = await fetch('/api/config');
+    const res = await fetch(apiUrl('/api/config'));
     if (!res.ok) return null;
     const data = await res.json();
     const cfg = data?.firebase;
