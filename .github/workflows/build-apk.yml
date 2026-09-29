@@ -1,5 +1,10 @@
 name: Build Android APK
 
+# Allow the job to push the built APK back into the repo (public/downloads/)
+# so the deployed website serves it as a direct download.
+permissions:
+  contents: write
+
 on:
   workflow_dispatch: {}
   push:
@@ -65,3 +70,21 @@ jobs:
           name: mahdi-translate-apk
           path: release/mahdi-translate.apk
           retention-days: 30
+
+      # Commit the freshly built APK into the repo so the deployed website
+      # (public/downloads/mahdi-translate.apk) offers it as a direct download.
+      # Only touches public/downloads/**, which is NOT in the on.push.paths
+      # filter, so this does not retrigger the workflow (no loop).
+      - name: Publish APK to website downloads
+        run: |
+          mkdir -p public/downloads
+          cp release/mahdi-translate.apk public/downloads/mahdi-translate.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f public/downloads/mahdi-translate.apk
+          if git diff --cached --quiet; then
+            echo "APK unchanged — nothing to commit"
+          else
+            git commit -m "chore: publish built Android APK for website download"
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
