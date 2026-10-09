@@ -7,6 +7,16 @@ export default defineConfig(() => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        // Accept any host header so the app also works behind proxies/previews.
+        allowedHosts: true as const,
+        // When running behind an HTTPS proxy, set MAHDI_HTTPS_HMR=1 so the HMR
+        // socket uses wss://host:443 instead of ws://host:3000.
+        hmr: process.env.MAHDI_HTTPS_HMR
+          ? { clientPort: Number(process.env.MAHDI_HTTPS_HMR_PORT || 443), protocol: 'wss' }
+          : undefined,
+      },
+      build: {
+        chunkSizeWarningLimit: 900,
       },
       plugins: [react()],
       resolve: {

@@ -53,7 +53,7 @@ import {
   DialectCode,
   CustomThemeSettings
 } from '../types.ts';
-import { THEMES_LIST, THEME_CATEGORIES } from '../themeRegistry.ts';
+import { ThemeGallery } from './ThemeGallery.tsx';
 import { DOMAINS, TONES, DIALECTS } from '../constants.ts';
 import { 
   getOfflinePacks, 
@@ -170,7 +170,6 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showSavedNotification, setShowSavedNotification] = useState(false);
   const [offlinePacks, setOfflinePacks] = useState(getOfflinePacks());
-  const [selectedThemeCategory, setSelectedThemeCategory] = useState<string>('all');
   const [themeSearch, setThemeSearch] = useState<string>('');
   const [googleUser, setGoogleUser] = useState<GoogleUserProfile | null>(getStoredGoogleUser());
   const [isSyncing, setIsSyncing] = useState(false);
@@ -266,31 +265,31 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
     { id: 'voice', label: 'الصوت ومعاينة النطق', icon: Volume2 },
     { id: 'buttons', label: 'ترتيب وأبعاد الأزرار', icon: LayoutGrid },
     { id: 'account', label: 'حساب Google والسحابة', icon: Cloud, badge: googleUser ? 'متصل' : undefined },
-    { id: 'appearance', label: 'الثيمات والواجهة (125+)', icon: Palette },
+    { id: 'appearance', label: 'الثيمات والواجهة (1500+)', icon: Palette },
     { id: 'privacy', label: 'الأمان والخصوصية', icon: Shield },
     { id: 'about', label: 'حول مهدي V3', icon: Info },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col w-full h-full bg-zinc-950/98 text-white backdrop-blur-2xl animate-in slide-in-from-bottom-4 duration-300 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex flex-col w-full h-full mt-sheet overflow-hidden">
       <div 
         className={`w-full h-full flex flex-col ${currentTheme.card} ${currentTheme.text} overflow-hidden`}
         dir="rtl"
       >
         {/* Top Header - Full Width Sticky */}
-        <div className="flex items-center justify-between px-4 sm:px-8 py-3.5 border-b border-white/10 bg-black/30 shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-8 py-3.5 border-b mt-hairline mt-sheet-header shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-2.5 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <div className="p-2 sm:p-2.5 rounded-2xl mt-accent-soft mt-accent-text border mt-hairline">
               <Sliders className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold tracking-tight">إعدادات مهدي الاحترافية (Mahdi Settings)</h2>
-                <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-md mt-accent-soft mt-accent-text border mt-hairline">
                   PRO V3
                 </span>
                 {showSavedNotification && (
-                  <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1 animate-in fade-in">
+                  <span className="text-[11px] mt-accent-text font-bold flex items-center gap-1 animate-in fade-in">
                     <CheckCircle className="w-3.5 h-3.5" />
                     <span>تم الحفظ</span>
                   </span>
@@ -305,7 +304,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
           <div className="flex items-center gap-2">
             <button 
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-zinc-200 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
+              className="px-3.5 py-1.5 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] hover:text-[var(--mt-text)] transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
               title="إغلاق والعودة لشاشة الترجمة"
             >
               <X className="w-4 h-4" />
@@ -318,7 +317,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           
           {/* THE LATERAL SIDEBAR (الشريط الجانبي الأنيق للأزرار) */}
-          <aside className="w-full md:w-64 border-b md:border-b-0 md:border-l border-white/10 bg-black/15 flex md:flex-col overflow-x-auto md:overflow-y-auto p-2 sm:p-3 gap-1 shrink-0 no-scrollbar">
+          <aside className="w-full md:w-64 border-b md:border-b-0 md:border-l mt-hairline bg-black/15 flex md:flex-col overflow-x-auto md:overflow-y-auto p-2 sm:p-3 gap-1 shrink-0 no-scrollbar">
             <div className="hidden md:flex items-center justify-between px-2 py-1 mb-1">
               <span className="text-[11px] font-bold opacity-50 uppercase tracking-wider">لوحة التحكم</span>
               <Settings className="w-3.5 h-3.5 opacity-40" />
@@ -334,24 +333,24 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   onClick={() => setActiveCategory(tab.id as any)}
                   className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all shrink-0 md:w-full text-right ${
                     isActive
-                      ? 'bg-amber-500 text-zinc-950 font-bold shadow-md shadow-amber-500/20'
-                      : 'bg-white/[0.02] md:bg-transparent hover:bg-white/10 text-zinc-300 opacity-80 hover:opacity-100'
+                      ? 'mt-btn-primary font-bold shadow-md shadow-amber-500/20'
+                      : 'mt-surface-soft md:bg-transparent hover:bg-[var(--mt-surface)] mt-subtext opacity-80 hover:opacity-100'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-zinc-950' : 'text-amber-400/80'}`} />
+                    <Icon className={`w-4 h-4 ${isActive ? '' : 'mt-accent-text/80'}`} />
                     <span className="whitespace-nowrap">{tab.label}</span>
                   </div>
                   {tab.badge && (
                     <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-bold ${
-                      isActive ? 'bg-zinc-950 text-amber-400' : 'bg-amber-500/20 text-amber-300'
+                      isActive ? 'mt-surface-soft mt-accent-text' : 'mt-accent-soft mt-accent-text'
                     }`}>
                       {tab.badge}
                     </span>
                   )}
                   {tab.count !== undefined && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                      isActive ? 'bg-zinc-900/20 text-zinc-950' : 'bg-white/10 text-zinc-400'
+                      isActive ? 'bg-zinc-900/20 ' : 'mt-surface-soft mt-subtext'
                     }`}>
                       {tab.count}
                     </span>
@@ -371,17 +370,17 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                 <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-amber-500/15 via-white/[0.03] to-transparent border border-amber-500/25 space-y-2">
                   <div className="flex items-center justify-between flex-wrap gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 sm:p-3 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      <div className="p-2.5 sm:p-3 rounded-2xl mt-accent-soft mt-accent-text border mt-hairline">
                         <Sparkles className="w-6 h-6" />
                       </div>
                       <div>
-                        <h3 className="text-base sm:text-lg font-bold text-amber-300">أدوات وميزات مهدي الاحترافية (Tools & Features Hub)</h3>
-                        <p className="text-xs text-zinc-300/80">
+                        <h3 className="text-base sm:text-lg font-bold mt-accent-text">أدوات وميزات مهدي الاحترافية (Tools & Features Hub)</h3>
+                        <p className="text-xs mt-subtext/80">
                           جميع ميزات التطبيق المتقدمة منظمة بأناقة وسهولة، مع وصول فوري وتشغيل مباشر
                         </p>
                       </div>
                     </div>
-                    <span className="px-3 py-1 text-xs font-bold rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <span className="px-3 py-1 text-xs font-bold rounded-xl mt-accent-soft mt-accent-text border mt-hairline">
                       8 ميزات وأدوات احترافية
                     </span>
                   </div>
@@ -390,11 +389,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                 {/* The 8 Requested Buttons Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* 1. عمودي ↕ / أفقي ↔ (تبديل اتجاه الواجهة والأزرار) */}
-                  <div className="p-5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-amber-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
+                  <div className="p-5 rounded-2xl mt-surface-soft hover:bg-[var(--mt-surface)] border mt-hairline hover:border-[var(--mt-border-strong)] transition-all flex flex-col justify-between gap-4 shadow-lg">
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                          <div className="p-2.5 rounded-xl mt-accent-soft mt-accent-text border mt-hairline">
                             <ArrowRightLeft className={`w-5 h-5 ${toolbarOrientation === 'vertical' ? 'rotate-90' : ''}`} />
                           </div>
                           <div>
@@ -404,11 +403,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                             <span className="text-[11px] opacity-60">توجيه الأزرار وشريط الأدوات</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg mt-accent-soft mt-accent-text border mt-hairline">
                           {toolbarOrientation === 'vertical' ? 'نمط عمودي ↕' : 'نمط أفقي ↔'}
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-300/75 leading-relaxed">
+                      <p className="text-xs mt-subtext/75 leading-relaxed">
                         التبديل الفوري بين التخطيط العمودي المتراص أو التخطيط الأفقي المتسع لشريط الأدوات والتحكم.
                       </p>
                     </div>
@@ -417,7 +416,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                         const next = toolbarOrientation === 'horizontal' ? 'vertical' : 'horizontal';
                         if (onChangeToolbarOrientation) onChangeToolbarOrientation(next);
                       }}
-                      className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
+                      className="w-full py-2.5 px-4 rounded-xl mt-btn-primary font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
                     >
                       <ArrowRightLeft className={`w-4 h-4 ${toolbarOrientation === 'vertical' ? 'rotate-90' : ''}`} />
                       <span>التحويل إلى: {toolbarOrientation === 'horizontal' ? 'عمودي ↕' : 'أفقي ↔'}</span>
@@ -425,11 +424,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   </div>
 
                   {/* 2. محادثة صوتية 🎙️ */}
-                  <div className="p-5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-sky-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
+                  <div className="p-5 rounded-2xl mt-surface-soft hover:bg-[var(--mt-surface)] border mt-hairline hover:border-sky-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                          <div className="p-2.5 rounded-xl bg-sky-500/20 mt-accent-text border border-sky-500/30">
                             <Users className="w-5 h-5" />
                           </div>
                           <div>
@@ -437,11 +436,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                             <span className="text-[11px] opacity-60">صوت-إلى-صوت ثنائي مباشر</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-sky-500/20 mt-accent-text border border-sky-500/30">
                           محادثة حية
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-300/75 leading-relaxed">
+                      <p className="text-xs mt-subtext/75 leading-relaxed">
                         حوار شفهي متزامن وجهاً لوجه بين شخصين بلغتين مختلفتين، مع استماع فوري وترجمة ناطقة تلقائياً.
                       </p>
                     </div>
@@ -450,7 +449,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                         onClose();
                         if (onOpenConversation) onOpenConversation();
                       }}
-                      className="w-full py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
+                      className="w-full py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
                     >
                       <Users className="w-4 h-4" />
                       <span>تشغيل محادثة صوتية 🎙️</span>
@@ -458,11 +457,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   </div>
 
                   {/* 3. نافذة عائمة 🪟 */}
-                  <div className="p-5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-amber-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
+                  <div className="p-5 rounded-2xl mt-surface-soft hover:bg-[var(--mt-surface)] border mt-hairline hover:border-[var(--mt-border-strong)] transition-all flex flex-col justify-between gap-4 shadow-lg">
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                          <div className="p-2.5 rounded-xl mt-accent-soft mt-accent-text border mt-hairline">
                             <Sparkles className="w-5 h-5" />
                           </div>
                           <div>
@@ -472,13 +471,13 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                         </div>
                         <span className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border ${
                           isFloatingOpen 
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
-                            : 'bg-white/10 text-zinc-400 border-white/10'
+                            ? 'mt-accent-soft mt-success-text border-emerald-500/30' 
+                            : 'mt-surface-soft mt-subtext mt-hairline'
                         }`}>
                           {isFloatingOpen ? 'نشطة الآن ✓' : 'متوقفة'}
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-300/75 leading-relaxed">
+                      <p className="text-xs mt-subtext/75 leading-relaxed">
                         نافذة ترجمة سريعة وصغيرة قابلة للسحب تظل فوق كل النوافذ لترجمة النصوص والمقالات دون تبديل الشاشات.
                       </p>
                     </div>
@@ -488,8 +487,8 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                       }}
                       className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98 ${
                         isFloatingOpen
-                          ? 'bg-amber-500 text-zinc-950 hover:bg-amber-400 shadow-amber-500/20'
-                          : 'bg-white/10 hover:bg-white/20 text-white border border-white/15'
+                          ? 'mt-btn-primary hover:bg-amber-400 shadow-amber-500/20'
+                          : 'mt-surface-soft hover:bg-[var(--mt-surface)]  border mt-hairline'
                       }`}
                     >
                       <Sparkles className="w-4 h-4" />
@@ -498,11 +497,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   </div>
 
                   {/* 4. ترجمة الصور والكاميرا 📷 */}
-                  <div className="p-5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-amber-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
+                  <div className="p-5 rounded-2xl mt-surface-soft hover:bg-[var(--mt-surface)] border mt-hairline hover:border-[var(--mt-border-strong)] transition-all flex flex-col justify-between gap-4 shadow-lg">
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                          <div className="p-2.5 rounded-xl mt-accent-soft mt-accent-text border mt-hairline">
                             <Camera className="w-5 h-5" />
                           </div>
                           <div>
@@ -510,11 +509,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                             <span className="text-[11px] opacity-60">استخراج وترجمة بصرية OCR</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg mt-accent-soft mt-accent-text border mt-hairline">
                           كاميرا وصور
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-300/75 leading-relaxed">
+                      <p className="text-xs mt-subtext/75 leading-relaxed">
                         التقاط صور بالكاميرا أو رفع مستندات ولوحات وإشارات لاستخراج النصوص وترجمتها بدقة فورية.
                       </p>
                     </div>
@@ -523,7 +522,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                         onClose();
                         if (onOpenImage) onOpenImage();
                       }}
-                      className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
+                      className="w-full py-2.5 px-4 rounded-xl mt-btn-primary font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
                     >
                       <Camera className="w-4 h-4" />
                       <span>فتح ترجمة الصور والكاميرا 📷</span>
@@ -531,11 +530,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   </div>
 
                   {/* 5. حزم اللغات (8) */}
-                  <div className="p-5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-emerald-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
+                  <div className="p-5 rounded-2xl mt-surface-soft hover:bg-[var(--mt-surface)] border mt-hairline hover:border-emerald-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          <div className="p-2.5 rounded-xl mt-accent-soft mt-accent-text border border-emerald-500/30">
                             <Download className="w-5 h-5" />
                           </div>
                           <div>
@@ -545,11 +544,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                             <span className="text-[11px] opacity-60">الترجمة بدون اتصال بالإنترنت</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg mt-accent-soft mt-success-text border border-emerald-500/30">
                           {downloadedPacksCount || offlinePacks.filter(p => p.status === 'downloaded').length || 8} جاهزة
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-300/75 leading-relaxed">
+                      <p className="text-xs mt-subtext/75 leading-relaxed">
                         إدارة وتحميل قواميس وحزم اللغات والنماذج المدمجة لترجمة فائقة السرعة بدون أي رصيد أو شبكة إنترنت.
                       </p>
                     </div>
@@ -558,7 +557,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                         onClose();
                         if (onOpenOfflinePacks) onOpenOfflinePacks();
                       }}
-                      className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
+                      className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
                     >
                       <Download className="w-4 h-4" />
                       <span>فتح مدير حزم اللغات ({downloadedPacksCount || offlinePacks.filter(p => p.status === 'downloaded').length || 8})</span>
@@ -566,11 +565,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   </div>
 
                   {/* 6. مقارنة المحركات ⚖️ */}
-                  <div className="p-5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-indigo-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
+                  <div className="p-5 rounded-2xl mt-surface-soft hover:bg-[var(--mt-surface)] border mt-hairline hover:border-indigo-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                          <div className="p-2.5 rounded-xl mt-accent-soft mt-accent-text border border-indigo-500/30">
                             <Scale className="w-5 h-5" />
                           </div>
                           <div>
@@ -578,11 +577,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                             <span className="text-[11px] opacity-60">مقارنة ثلاثية متزامنة</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg mt-accent-soft text-indigo-300 border border-indigo-500/30">
                           3 محركات
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-300/75 leading-relaxed">
+                      <p className="text-xs mt-subtext/75 leading-relaxed">
                         مقارنة دقيقة وفورية لنصك المترجم بين: نموذج مهدي العصبي، نموذج صياغة DeepL، والمحرك القائم على القواعد.
                       </p>
                     </div>
@@ -592,7 +591,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                         if (onOpenComparison) onOpenComparison();
                       }}
                       disabled={!inputText || !inputText.trim()}
-                      className="w-full py-2.5 px-4 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:pointer-events-none text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
+                      className="w-full py-2.5 px-4 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:pointer-events-none font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
                     >
                       <Scale className="w-4 h-4" />
                       <span>{inputText && inputText.trim() ? 'بدء مقارنة المحركات ⚖️' : 'أدخل نصاً في الترجمة أولاً للمقارنة'}</span>
@@ -600,11 +599,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   </div>
 
                   {/* 7. التحليل الذكي ✨ */}
-                  <div className="p-5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-amber-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
+                  <div className="p-5 rounded-2xl mt-surface-soft hover:bg-[var(--mt-surface)] border mt-hairline hover:border-[var(--mt-border-strong)] transition-all flex flex-col justify-between gap-4 shadow-lg">
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                          <div className="p-2.5 rounded-xl mt-accent-soft mt-accent-text border mt-hairline">
                             <Sparkles className="w-5 h-5" />
                           </div>
                           <div>
@@ -612,11 +611,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                             <span className="text-[11px] opacity-60">تحليل لغوي وبدائل دقيقة</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg mt-accent-soft mt-accent-text border mt-hairline">
                           ذكاء فائق
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-300/75 leading-relaxed">
+                      <p className="text-xs mt-subtext/75 leading-relaxed">
                         فحص بلاغي وسياقي للنص مع توضيح الفروق الدقيقة، بدائل مرادفة، والسياق الثقافي لكل مصطلح.
                       </p>
                     </div>
@@ -626,7 +625,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                         if (onOpenAnalysis) onOpenAnalysis();
                       }}
                       disabled={!inputText || !inputText.trim()}
-                      className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:pointer-events-none text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
+                      className="w-full py-2.5 px-4 rounded-xl mt-btn-primary disabled:opacity-40 disabled:pointer-events-none font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
                     >
                       <Sparkles className="w-4 h-4" />
                       <span>{inputText && inputText.trim() ? 'عرض التحليل اللغوي الذكي ✨' : 'أدخل نصاً في الترجمة أولاً للتحليل'}</span>
@@ -634,11 +633,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   </div>
 
                   {/* 8. سجل الترجمات (0) */}
-                  <div className="p-5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-purple-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
+                  <div className="p-5 rounded-2xl mt-surface-soft hover:bg-[var(--mt-surface)] border mt-hairline hover:border-purple-500/40 transition-all flex flex-col justify-between gap-4 shadow-lg">
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                          <div className="p-2.5 rounded-xl mt-accent-soft mt-accent-text border border-purple-500/30">
                             <History className="w-5 h-5" />
                           </div>
                           <div>
@@ -646,11 +645,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                             <span className="text-[11px] opacity-60">الأرشيف والمفضلة المحفوظة</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg mt-accent-soft text-purple-300 border border-purple-500/30">
                           {history.length} محفوظ
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-300/75 leading-relaxed">
+                      <p className="text-xs mt-subtext/75 leading-relaxed">
                         سجل كامل لجميع الترجمات السابقة للبحث والنسخ والاسترجاع في أي وقت مع إمكانية مسح السجل بأمان.
                       </p>
                     </div>
@@ -659,7 +658,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                         onClose();
                         if (onOpenHistory) onOpenHistory();
                       }}
-                      className="w-full py-2.5 px-4 rounded-xl bg-purple-500 hover:bg-purple-400 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
+                      className="w-full py-2.5 px-4 rounded-xl bg-purple-500 hover:bg-purple-400 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-98"
                     >
                       <History className="w-4 h-4" />
                       <span>فتح واستعراض سجل الترجمات ({history.length})</span>
@@ -668,16 +667,16 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                 </div>
 
                 {/* Quick orientation helper */}
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between flex-wrap gap-3">
+                <div className="p-4 rounded-2xl mt-surface-soft border mt-hairline flex items-center justify-between flex-wrap gap-3">
                   <div className="text-xs space-y-1">
-                    <span className="font-bold text-amber-300 block">هل تود إظهار هذه الأزرار كشريط وصول سريع أسفل الترجمة أيضاً؟</span>
+                    <span className="font-bold mt-accent-text block">هل تود إظهار هذه الأزرار كشريط وصول سريع أسفل الترجمة أيضاً؟</span>
                     <span className="opacity-70 text-[11px]">يمكنك تخصيص ترتيبها أو تفعيلها من تبويب "ترتيب وأبعاد الأزرار".</span>
                   </div>
                   <button
                     onClick={() => setActiveCategory('buttons')}
-                    className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white flex items-center gap-1.5 transition-all"
+                    className="px-3.5 py-1.5 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] text-xs font-bold flex items-center gap-1.5 transition-all"
                   >
-                    <LayoutGrid className="w-3.5 h-3.5 text-amber-400" />
+                    <LayoutGrid className="w-3.5 h-3.5 mt-accent-text" />
                     <span>تخصيص ترتيب الأزرار</span>
                   </button>
                 </div>
@@ -687,14 +686,14 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
             {/* 1. GENERAL TAB */}
             {activeCategory === 'general' && (
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-4">
-                  <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                <div className="p-4 rounded-2xl mt-surface-soft border mt-hairline space-y-4">
+                  <h3 className="text-sm font-bold mt-accent-text flex items-center gap-2">
                     <Settings className="w-4 h-4" />
                     <span>تفضيلات الترجمة وسلوك التطبيق</span>
                   </h3>
 
                   <div className="grid sm:grid-cols-2 gap-3">
-                    <label className="flex items-center justify-between p-3 rounded-xl bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                    <label className="flex items-center justify-between p-3 rounded-xl mt-surface-soft cursor-pointer hover:bg-[var(--mt-surface)] transition-colors">
                       <div className="text-xs">
                         <span className="font-bold block">الترجمة الفورية أثناء الكتابة</span>
                         <span className="opacity-60 text-[11px]">ترجمة سلسة سريعة دون انتظار ضغط زر</span>
@@ -707,7 +706,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                       />
                     </label>
 
-                    <label className="flex items-center justify-between p-3 rounded-xl bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                    <label className="flex items-center justify-between p-3 rounded-xl mt-surface-soft cursor-pointer hover:bg-[var(--mt-surface)] transition-colors">
                       <div className="text-xs">
                         <span className="font-bold block">نسخ الترجمة تلقائياً للحافظة</span>
                         <span className="opacity-60 text-[11px]">جاهزة للصق بمجرد اكتمال الترجمة</span>
@@ -723,9 +722,9 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                 </div>
 
                 {/* Force Offline Mode */}
-                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-4">
+                <div className="p-4 rounded-2xl mt-accent-soft border border-amber-500/20 flex items-center justify-between gap-4">
                   <div className="space-y-1 text-xs">
-                    <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                    <span className="font-bold mt-accent-text flex items-center gap-1.5">
                       <HardDrive className="w-4 h-4" />
                       <span>فرض وضع الترجمة بدون إنترنت (Offline Mode)</span>
                     </span>
@@ -737,8 +736,8 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                     onClick={() => onToggleForceOffline(!forceOffline)}
                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
                       forceOffline 
-                        ? 'bg-amber-500 text-zinc-950 shadow-md' 
-                        : 'bg-white/10 text-zinc-300 hover:bg-white/20'
+                        ? 'mt-btn-primary shadow-md' 
+                        : 'mt-surface-soft mt-subtext hover:bg-[var(--mt-surface)]'
                     }`}
                   >
                     {forceOffline ? 'مفعّل (أوفلاين)' : 'معطّل (سحابي)'}
@@ -751,7 +750,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
             {activeCategory === 'linguistics' && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2 mb-1">
+                  <h3 className="text-sm font-bold mt-accent-text flex items-center gap-2 mb-1">
                     <SlidersHorizontal className="w-4 h-4" />
                     <span>التخصيص اللغوي الدقيق (المجال • النبرة • اللهجة)</span>
                   </h3>
@@ -761,9 +760,9 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                 </div>
 
                 {/* Section A: المجال (Domain) */}
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+                <div className="p-4 rounded-2xl mt-surface-soft border mt-hairline space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-amber-300">🏢 المجال والتخصص الدلالي (Domain):</span>
+                    <span className="text-xs font-bold mt-accent-text">🏢 المجال والتخصص الدلالي (Domain):</span>
                     <span className="text-[11px] opacity-60">
                       الحالي: {DOMAINS.find(d => d.code === selectedDomain)?.nameAr}
                     </span>
@@ -780,13 +779,13 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                           }}
                           className={`p-2.5 rounded-xl text-right border transition-all text-xs ${
                             isSel 
-                              ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold shadow-sm' 
-                              : 'bg-white/5 border-white/10 opacity-75 hover:opacity-100'
+                              ? 'mt-accent-soft mt-hairline mt-accent-text font-bold shadow-sm' 
+                              : 'mt-surface-soft mt-hairline opacity-75 hover:opacity-100'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-0.5">
                             <span className="font-bold">{d.nameAr}</span>
-                            {isSel && <Check className="w-3 h-3 text-amber-400" />}
+                            {isSel && <Check className="w-3 h-3 mt-accent-text" />}
                           </div>
                           <span className="text-[10px] opacity-60 block truncate">{d.desc}</span>
                         </button>
@@ -796,7 +795,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                 </div>
 
                 {/* Section B: النبرة (Tone) */}
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+                <div className="p-4 rounded-2xl mt-surface-soft border mt-hairline space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-indigo-300">🎙️ النبرة والأسلوب البلاغي (Tone):</span>
                     <span className="text-[11px] opacity-60">
@@ -815,13 +814,13 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                           }}
                           className={`p-2.5 rounded-xl text-right border transition-all text-xs ${
                             isSel 
-                              ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold shadow-sm' 
-                              : 'bg-white/5 border-white/10 opacity-75 hover:opacity-100'
+                              ? 'mt-accent-soft border-indigo-500 text-indigo-300 font-bold shadow-sm' 
+                              : 'mt-surface-soft mt-hairline opacity-75 hover:opacity-100'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-0.5">
                             <span className="font-bold">{t.nameAr}</span>
-                            {isSel && <Check className="w-3 h-3 text-indigo-400" />}
+                            {isSel && <Check className="w-3 h-3 mt-accent-text" />}
                           </div>
                           <span className="text-[10px] opacity-60 block truncate">{t.desc}</span>
                         </button>
@@ -831,9 +830,9 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                 </div>
 
                 {/* Section C: اللهجة (Dialect) */}
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+                <div className="p-4 rounded-2xl mt-surface-soft border mt-hairline space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-emerald-300">🗣️ اللهجة المستهدفة (Dialect):</span>
+                    <span className="text-xs font-bold mt-success-text">🗣️ اللهجة المستهدفة (Dialect):</span>
                     <span className="text-[11px] opacity-60">
                       الحالي: {DIALECTS.find(dl => dl.code === selectedDialect)?.nameAr}
                     </span>
@@ -850,13 +849,13 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                           }}
                           className={`p-2.5 rounded-xl text-right border transition-all text-xs ${
                             isSel 
-                              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold shadow-sm' 
-                              : 'bg-white/5 border-white/10 opacity-75 hover:opacity-100'
+                              ? 'mt-accent-soft border-emerald-500 mt-success-text font-bold shadow-sm' 
+                              : 'mt-surface-soft mt-hairline opacity-75 hover:opacity-100'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-0.5">
                             <span className="font-bold">{dl.nameAr}</span>
-                            {isSel && <Check className="w-3 h-3 text-emerald-400" />}
+                            {isSel && <Check className="w-3 h-3 mt-accent-text" />}
                           </div>
                           <span className="text-[10px] opacity-60 block truncate">{dl.name}</span>
                         </button>
@@ -870,8 +869,8 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
             {/* 3. TRANSLATION ENGINES TAB */}
             {activeCategory === 'translation' && (
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
-                  <h3 className="text-sm font-bold text-amber-400">محركات الترجمة المدمجة</h3>
+                <div className="p-4 rounded-2xl mt-surface-soft border mt-hairline space-y-3">
+                  <h3 className="text-sm font-bold mt-accent-text">محركات الترجمة المدمجة</h3>
                   <div className="grid sm:grid-cols-3 gap-3">
                     {[
                       { id: 'mahdi-neural', name: 'مهدي العصبي الذكي ✨', desc: 'أعلى فهم سياقي وأدق صياغة لغوية' },
@@ -883,8 +882,8 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                         onClick={() => handleUpdate({ defaultEngine: eng.id as any })}
                         className={`p-3.5 rounded-2xl text-right border transition-all ${
                           appSettings.defaultEngine === eng.id
-                            ? 'bg-amber-500/20 border-amber-500/50 text-white'
-                            : 'bg-white/5 border-white/10 opacity-70 hover:opacity-100'
+                            ? 'mt-accent-soft border-amber-500/50 '
+                            : 'mt-surface-soft mt-hairline opacity-70 hover:opacity-100'
                         }`}
                       >
                         <span className="font-bold text-xs block mb-1">{eng.name}</span>
@@ -899,9 +898,9 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
             {/* 4. OFFLINE PACKS TAB */}
             {activeCategory === 'offline' && (
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-wrap items-center justify-between gap-4">
+                <div className="p-4 rounded-2xl mt-surface-soft border mt-hairline flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                    <h3 className="text-sm font-bold mt-accent-text flex items-center gap-2">
                       <Download className="w-4 h-4" />
                       <span>الحزم المحملة على الهاتف</span>
                     </h3>
@@ -912,7 +911,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
 
                   <button
                     onClick={() => downloadAllEssentialPacks()}
-                    className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition-all shadow-sm"
+                    className="px-3.5 py-1.5 rounded-xl mt-btn-primary text-xs font-bold transition-all shadow-sm"
                   >
                     تحميل الحزم الأساسية
                   </button>
@@ -922,24 +921,24 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   {offlinePacks.slice(0, 8).map(p => (
                     <div 
                       key={p.id}
-                      className="p-3 rounded-2xl bg-white/[0.04] border border-white/5 flex items-center justify-between gap-3 text-xs"
+                      className="p-3 rounded-2xl mt-surface-soft border mt-hairline flex items-center justify-between gap-3 text-xs"
                     >
                       <div className="flex items-center gap-2.5">
                         <span className="font-bold">{p.langNative}</span>
                         <span className="opacity-60 text-[11px]">({p.typeNameAr})</span>
-                        <span className="px-1.5 py-0.5 rounded-md bg-white/5 text-[10px] font-mono">{p.sizeMB} MB</span>
+                        <span className="px-1.5 py-0.5 rounded-md mt-surface-soft text-[10px] font-mono">{p.sizeMB} MB</span>
                       </div>
 
                       <div>
                         {p.status === 'downloaded' ? (
-                          <span className="text-emerald-400 font-bold flex items-center gap-1 text-[11px]">
+                          <span className="mt-accent-text font-bold flex items-center gap-1 text-[11px]">
                             <CheckCircle className="w-3.5 h-3.5" />
                             <span>مثبت وجاهز</span>
                           </span>
                         ) : (
                           <button
                             onClick={() => startDownloadPack(p.id)}
-                            className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-bold hover:bg-amber-500/30 text-[11px]"
+                            className="px-2.5 py-1 rounded-xl mt-accent-soft mt-accent-text font-bold hover:bg-amber-500/30 text-[11px]"
                           >
                             تنزيل الآن
                           </button>
@@ -954,9 +953,9 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
             {/* 5. VOICE TAB & VOICE PREVIEW (معاينة الصوت قبل اختياره) */}
             {activeCategory === 'voice' && (
               <div className="space-y-5">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+                <div className="p-4 rounded-2xl mt-surface-soft border mt-hairline space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                    <h3 className="text-sm font-bold mt-accent-text flex items-center gap-2">
                       <Volume2 className="w-4 h-4" />
                       <span>إعدادات النطق ومعاينة الأصوات (Voice & TTS)</span>
                     </h3>
@@ -965,7 +964,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                     <button
                       onClick={() => handlePreviewVoice('ar')}
                       disabled={previewVoicePlaying}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs transition-all active:scale-95 disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl mt-btn-primary font-bold text-xs transition-all active:scale-95 disabled:opacity-50"
                       title="تجربة الاستماع للصوت الحالي"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
@@ -984,8 +983,8 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                             key={v}
                             className={`p-2.5 rounded-xl border flex flex-col justify-between gap-2 transition-all ${
                               isSel 
-                                ? 'bg-amber-500/20 border-amber-500 text-amber-300' 
-                                : 'bg-white/5 border-white/10 text-white/70'
+                                ? 'mt-accent-soft mt-hairline mt-accent-text' 
+                                : 'mt-surface-soft mt-hairline '
                             }`}
                           >
                             <button
@@ -999,7 +998,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                                 e.stopPropagation();
                                 await speakText('مرحباً، أنا صوت ' + v, 'ar', { ...ttsSettings, voiceName: v });
                               }}
-                              className="self-end px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-[10px] text-zinc-300 flex items-center gap-1"
+                              className="self-end px-2 py-0.5 rounded-lg mt-surface-soft hover:bg-[var(--mt-surface)] text-[10px] mt-subtext flex items-center gap-1"
                               title="استمع لتجربة هذا الصوت"
                             >
                               <Play className="w-2.5 h-2.5 fill-current" />
@@ -1016,7 +1015,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="font-bold">سرعة النطق:</span>
-                        <span className="text-amber-400 font-mono font-bold">{ttsSettings.rate}x</span>
+                        <span className="mt-accent-text font-mono font-bold">{ttsSettings.rate}x</span>
                       </div>
                       <input 
                         type="range"
@@ -1032,7 +1031,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="font-bold">طبقة الصوت (Pitch):</span>
-                        <span className="text-amber-400 font-mono font-bold">{ttsSettings.pitch}x</span>
+                        <span className="mt-accent-text font-mono font-bold">{ttsSettings.pitch}x</span>
                       </div>
                       <input 
                         type="range"
@@ -1047,11 +1046,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   </div>
 
                   {/* English Preview */}
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="pt-2 border-t mt-hairline flex items-center justify-between text-xs">
                     <span className="opacity-60">يمكنك أيضاً تجربة النطق باللغة الإنجليزية:</span>
                     <button
                       onClick={() => handlePreviewVoice('en')}
-                      className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-zinc-300 text-[11px] font-bold"
+                      className="px-2.5 py-1 rounded-lg mt-surface-soft hover:bg-[var(--mt-surface)] mt-subtext text-[11px] font-bold"
                     >
                       معاينة بالإنجليزية 🎙️
                     </button>
@@ -1063,15 +1062,15 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
             {/* 6. GOOGLE ACCOUNT & CLOUD STORAGE (تسجيل الدخول والتخزين السحابي الرسمي) */}
             {activeCategory === 'account' && (
               <div className="space-y-5">
-                <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+                <div className="p-5 rounded-2xl mt-surface-soft border mt-hairline space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                    <h3 className="text-sm font-bold mt-accent-text flex items-center gap-2">
                       <Cloud className="w-4 h-4" />
                       <span>حساب Google الرسمي والتخزين السحابي</span>
                     </h3>
 
                     {googleUser && (
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full mt-accent-soft mt-accent-text border border-emerald-500/30 flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" />
                         <span>متصل بنجاح</span>
                       </span>
@@ -1080,7 +1079,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
 
                   {googleUser ? (
                     /* Logged In Google Account State */
-                    <div className="p-4 rounded-2xl bg-black/30 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="p-4 rounded-2xl bg-black/30 border mt-hairline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <img 
                           src={googleUser.avatarUrl} 
@@ -1089,12 +1088,12 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                         />
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-sm text-white">{googleUser.name}</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">Google</span>
+                            <span className="font-bold text-sm">{googleUser.name}</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded mt-accent-soft mt-accent-text font-bold">Google</span>
                           </div>
-                          <span className="text-xs text-zinc-400 block font-mono">{googleUser.email}</span>
+                          <span className="text-xs mt-subtext block font-mono">{googleUser.email}</span>
                           {googleUser.lastSyncedAt && (
-                            <span className="text-[10px] text-zinc-500 block mt-0.5">
+                            <span className="text-[10px] mt-subtext block mt-0.5">
                               آخر مزامنة: {new Date(googleUser.lastSyncedAt).toLocaleTimeString()}
                             </span>
                           )}
@@ -1105,7 +1104,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                         <button
                           onClick={handleManualSync}
                           disabled={isSyncing}
-                          className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
+                          className="px-3.5 py-1.5 rounded-xl mt-btn-primary text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
                         >
                           <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
                           <span>{isSyncing ? 'جاري المزامنة...' : 'مزامنة السحابة الآن'}</span>
@@ -1113,7 +1112,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
 
                         <button
                           onClick={handleGoogleSignOut}
-                          className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-colors"
+                          className="p-2 rounded-xl mt-surface-soft hover:bg-[var(--mt-accent-soft)] mt-subtext hover:text-[var(--mt-danger)] transition-colors"
                           title="تسجيل الخروج"
                         >
                           <LogOut className="w-4 h-4" />
@@ -1134,7 +1133,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                       </div>
 
                       <div>
-                        <h4 className="font-bold text-sm text-white">تسجيل الدخول باستخدام حساب Google</h4>
+                        <h4 className="font-bold text-sm">تسجيل الدخول باستخدام حساب Google</h4>
                         <p className="text-xs opacity-70 mt-1 max-w-sm mx-auto">
                           احفظ سجل ترجماتك، المفضلة، والثيمات الخاصة بك في سحابة Google للوصول إليها من أي جهاز
                         </p>
@@ -1152,15 +1151,15 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   {/* Cloud Storage Features Checklist */}
                   <div className="pt-2 text-xs space-y-2 opacity-80">
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <CheckCircle className="w-3.5 h-3.5 mt-accent-text shrink-0" />
                       <span>مزامنة فورية مشفرة لسجل الترجمات بين هاتفك وحاسوبك</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <CheckCircle className="w-3.5 h-3.5 mt-accent-text shrink-0" />
                       <span>حفظ المفضلة والقواميس المخصصة</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <CheckCircle className="w-3.5 h-3.5 mt-accent-text shrink-0" />
                       <span>استرجاع البيانات بضغطة زر عند تغيير الجهاز</span>
                     </div>
                   </div>
@@ -1171,9 +1170,9 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
             {/* 7. BUTTONS LAYOUT, ORDER & REORDERING (ترتيب وصعود ونزول للأزرار) */}
             {activeCategory === 'buttons' && (
               <div className="space-y-5">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+                <div className="p-4 rounded-2xl mt-surface-soft border mt-hairline space-y-4">
                   <div>
-                    <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                    <h3 className="text-sm font-bold mt-accent-text flex items-center gap-2">
                       <LayoutGrid className="w-4 h-4" />
                       <span>تخصيص ترتيب واتجاه أزرار شريط المهام</span>
                     </h3>
@@ -1183,7 +1182,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   </div>
 
                   {/* Orientation Switcher (أفقي / عمودي) */}
-                  <div className="p-3 rounded-xl bg-white/5 flex items-center justify-between">
+                  <div className="p-3 rounded-xl mt-surface-soft flex items-center justify-between">
                     <div>
                       <span className="font-bold text-xs block">اتجاه شريط الأزرار:</span>
                       <span className="opacity-60 text-[11px]">أفقي في الأعلى أو عمودي جانبي</span>
@@ -1192,7 +1191,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                       <button
                         onClick={() => onChangeToolbarOrientation && onChangeToolbarOrientation('horizontal')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                          toolbarOrientation === 'horizontal' ? 'bg-amber-500 text-zinc-950' : 'text-zinc-400'
+                          toolbarOrientation === 'horizontal' ? 'mt-btn-primary' : 'mt-subtext'
                         }`}
                       >
                         أفقي (Horizontal)
@@ -1200,7 +1199,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                       <button
                         onClick={() => onChangeToolbarOrientation && onChangeToolbarOrientation('vertical')}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                          toolbarOrientation === 'vertical' ? 'bg-amber-500 text-zinc-950' : 'text-zinc-400'
+                          toolbarOrientation === 'vertical' ? 'mt-btn-primary' : 'mt-subtext'
                         }`}
                       >
                         عمودي (Vertical)
@@ -1210,7 +1209,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
 
                   {/* Reordering List (صعود ونزول لكل زر) */}
                   <div className="space-y-2">
-                    <span className="text-xs font-bold text-amber-300 block">
+                    <span className="text-xs font-bold mt-accent-text block">
                       ترتيب الأزرار (استخدم الأسهم للصعود والنزول):
                     </span>
 
@@ -1218,10 +1217,10 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                       {toolbarButtonsOrder.map((btnKey, idx) => (
                         <div 
                           key={btnKey}
-                          className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between gap-3 text-xs"
+                          className="p-2.5 rounded-xl mt-surface-soft border mt-hairline flex items-center justify-between gap-3 text-xs"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center font-mono text-[10px] font-bold">
+                            <span className="w-5 h-5 rounded-full mt-surface-soft flex items-center justify-center font-mono text-[10px] font-bold">
                               {idx + 1}
                             </span>
                             <span className="font-medium">{buttonLabels[btnKey] || btnKey}</span>
@@ -1231,7 +1230,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                             <button
                               onClick={() => moveToolbarButton(idx, 'up')}
                               disabled={idx === 0}
-                              className="p-1 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-20 text-zinc-300 transition-all"
+                              className="p-1 rounded-lg mt-surface-soft hover:bg-[var(--mt-surface)] disabled:opacity-20 mt-subtext transition-all"
                               title="صعود للأعلى"
                             >
                               <ArrowUp className="w-3.5 h-3.5" />
@@ -1239,7 +1238,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                             <button
                               onClick={() => moveToolbarButton(idx, 'down')}
                               disabled={idx === toolbarButtonsOrder.length - 1}
-                              className="p-1 rounded-lg bg-white/5 hover:bg-white/15 disabled:opacity-20 text-zinc-300 transition-all"
+                              className="p-1 rounded-lg mt-surface-soft hover:bg-[var(--mt-surface)] disabled:opacity-20 mt-subtext transition-all"
                               title="نزول للأسفل"
                             >
                               <ArrowDown className="w-3.5 h-3.5" />
@@ -1257,7 +1256,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
             {activeCategory === 'appearance' && (
               <div className="space-y-5">
                 {/* Zoom Control */}
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
+                <div className="mt-surface-soft p-4 flex items-center justify-between text-xs" style={{ border: '1px solid var(--mt-border)', borderRadius: 'var(--mt-radius)' }}>
                   <div>
                     <span className="font-bold block">مستوى تكبير وتصغير الواجهة (Zoom)</span>
                     <span className="opacity-60 text-[11px]">تحكم سلس بحجم الخطوط والعناصر</span>
@@ -1265,78 +1264,37 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onChangeZoom(Math.max(50, zoom - 10))}
-                      className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 font-bold"
+                      className="mt-btn px-3 py-1.5"
                     >
                       -
                     </button>
-                    <span className="font-bold px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-mono">
+                    <span className="mt-badge font-mono px-3 py-1">
                       {zoom}%
                     </span>
                     <button
                       onClick={() => onChangeZoom(Math.min(250, zoom + 10))}
-                      className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 font-bold"
+                      className="mt-btn px-3 py-1.5"
                     >
                       +
                     </button>
                   </div>
                 </div>
 
-                {/* Themes List */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="text-xs font-bold text-amber-400">مكتبة الثيمات الملكية (125+ ثيم)</span>
-                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-sm">
-                      {THEME_CATEGORIES.slice(0, 6).map(c => (
-                        <button
-                          key={c.id}
-                          onClick={() => setSelectedThemeCategory(c.id)}
-                          className={`px-2 py-0.5 text-[10px] rounded-lg transition-all ${
-                            selectedThemeCategory === c.id 
-                              ? 'bg-amber-500 text-zinc-950 font-bold' 
-                              : 'bg-white/5 opacity-70 hover:opacity-100'
-                          }`}
-                        >
-                          {c.nameAr}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-64 overflow-y-auto p-1">
-                    {THEMES_LIST.slice(0, 24).map(th => (
-                      <button
-                        key={th.id}
-                        onClick={() => onSelectTheme(th)}
-                        className={`p-2.5 rounded-2xl text-right border transition-all ${
-                          currentTheme.id === th.id 
-                            ? 'ring-2 ring-amber-500 border-amber-500 shadow-lg' 
-                            : 'border-white/10 hover:border-white/30 bg-white/5'
-                        }`}
-                      >
-                        <div 
-                          className="w-full h-7 rounded-xl mb-1.5 flex items-center justify-center text-[11px] font-bold"
-                          style={{ backgroundColor: th.previewColor, color: '#fff' }}
-                        >
-                          {th.nameAr}
-                        </div>
-                        <span className="text-[11px] font-medium block truncate">{th.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* Full theme engine: 1500+ themes + appearance studio */}
+                <ThemeGallery variant="full" maxHeightClass="max-h-[38vh]" />
               </div>
             )}
 
             {/* 9. PRIVACY TAB */}
             {activeCategory === 'privacy' && (
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3 text-xs">
-                  <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                <div className="p-4 rounded-2xl mt-surface-soft border mt-hairline space-y-3 text-xs">
+                  <h3 className="text-sm font-bold mt-accent-text flex items-center gap-2">
                     <Shield className="w-4 h-4" />
                     <span>الخصوصية والأمان المصرفي</span>
                   </h3>
 
-                  <label className="flex items-center justify-between p-3 rounded-xl bg-white/5 cursor-pointer">
+                  <label className="flex items-center justify-between p-3 rounded-xl mt-surface-soft cursor-pointer">
                     <div>
                       <span className="font-bold block">الوضع الخاص (Private Mode)</span>
                       <span className="opacity-60 text-[11px]">عدم تخزين أي ترجمات في سجل التاريخ مطلقاً</span>
@@ -1349,9 +1307,9 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                     />
                   </label>
 
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                  <div className="flex items-center justify-between p-3 rounded-xl mt-accent-soft border border-rose-500/20">
                     <div>
-                      <span className="font-bold text-rose-300 block">مسح سجل التاريخ والمفضلة</span>
+                      <span className="font-bold mt-danger-text block">مسح سجل التاريخ والمفضلة</span>
                       <span className="opacity-70 text-[11px]">حذف كافة النصوص من التخزين المحلي</span>
                     </div>
                     <button
@@ -1360,7 +1318,7 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
                           onClearHistory();
                         }
                       }}
-                      className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold"
+                      className="px-3 py-1.5 rounded-xl mt-accent-soft hover:bg-rose-500/30 mt-danger-text font-bold"
                     >
                       مسح الآن
                     </button>
@@ -1372,11 +1330,11 @@ export const ProSettingsPanel: React.FC<ProSettingsPanelProps> = ({
             {/* 10. ABOUT TAB */}
             {activeCategory === 'about' && (
               <div className="p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-zinc-900 to-black border border-amber-500/20 space-y-3 text-center">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 border border-amber-500/40">
+                <div className="w-14 h-14 mx-auto rounded-2xl mt-accent-soft flex items-center justify-center mt-accent-text border mt-hairline">
                   <Sparkles className="w-7 h-7" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-amber-400">مهدي — Mahdi Translator V3</h3>
+                  <h3 className="text-lg font-bold mt-accent-text">مهدي — Mahdi Translator V3</h3>
                   <p className="text-xs text-amber-200/80 mt-1">
                     ترجمة فورية ذكية • حزم كاملة بدون إنترنت • محادثة صوتية ثنائية • دقة لغوية متكيفة
                   </p>

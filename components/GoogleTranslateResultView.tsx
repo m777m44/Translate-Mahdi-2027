@@ -1,24 +1,26 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Volume2, 
-  Copy, 
-  Star, 
-  Share2, 
-  Maximize2, 
-  MoreVertical, 
-  ThumbsDown, 
-  ChevronDown, 
-  ChevronUp, 
-  BookOpen, 
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import {
+  Volume2,
+  Copy,
+  Star,
+  Share2,
+  Maximize2,
+  MoreVertical,
+  ThumbsDown,
+  ChevronDown,
+  ChevronUp,
+  BookOpen,
   Sparkles,
   Check,
   X,
   Pen,
   ArrowRight,
   Edit3,
-  Search
+  ClipboardPaste,
+  Undo2,
 } from 'lucide-react';
 import { MoreTranslation, WordDefinition, ThemeConfig } from '../types.ts';
+import { useTheme } from '../themeContext.tsx';
 
 interface GoogleTranslateResultViewProps {
   sourceText: string;
@@ -42,8 +44,16 @@ interface GoogleTranslateResultViewProps {
   onSelectSynonym?: (synonym: string) => void;
   onOpenZoom?: () => void;
   onShowToast: (msg: string) => void;
-  theme: ThemeConfig;
+  theme?: ThemeConfig;
+  /** Saves a manual edit of the translation back into the app state. */
+  onCommitTranslation?: (text: string) => void;
+  onPaste?: () => void;
+  onSpeakTransliteration?: () => void;
 }
+
+/** Arabic (and other RTL scripts) detection used for automatic text direction. */
+const RTL_PATTERN = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+const detectDir = (text: string): 'rtl' | 'ltr' => (RTL_PATTERN.test(text) ? 'rtl' : 'ltr');
 
 export const GoogleTranslateResultView: React.FC<GoogleTranslateResultViewProps> = ({
   sourceText,
@@ -67,30 +77,63 @@ export const GoogleTranslateResultView: React.FC<GoogleTranslateResultViewProps>
   onSelectSynonym,
   onOpenZoom,
   onShowToast,
-  theme,
+  onCommitTranslation,
+  onPaste,
 }) => {
+  const { theme } = useTheme();
   const [expandAllMore, setExpandAllMore] = useState(true);
   const [expandedIndices, setExpandedIndices] = useState<Record<number, boolean>>({});
   const [activeSynonymIndex, setActiveSynonymIndex] = useState<number | null>(0);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [copiedTarget, setCopiedTarget] = useState(false);
   const [copiedSource, setCopiedSource] = useState(false);
-  const [isEditingSource, setIsEditingSource] = useState(false);
   const [isEditingTarget, setIsEditingTarget] = useState(false);
   const [customTargetText, setCustomTargetText] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const optionsRef = useRef<HTMLDivElement>(null);
+
+  const shownTranslation = customTargetText || translatedText;
+  const sourceDir = useMemo(() => detectDir(sourceText), [sourceText]);
+  const targetDir = useMemo(() => detectDir(shownTranslation), [shownTranslation]);
+
+  // Auto-grow the source textarea so nothing is ever hidden behind a scrollbar.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.max(64, Math.min(el.scrollHeight, 420))}px`;
+  }, [sourceText]);
+
+  // Close the floating options menu on outside click / Escape.
+  useEffect(() => {
+    if (!showOptionsMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (optionsRef.current && !optionsRef.current.contains(e.target as Node)) setShowOptionsMenu(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowOptionsMenu(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showOptionsMenu]);
+
+  // Reset a manual edit whenever a brand new translation arrives.
+  useEffect(() => {
+    setCustomTargetText('');
+  }, [translatedText]);
 
   const toggleIndex = (idx: number) => {
-    setExpandedIndices(prev => ({
-      ...prev,
-      [idx]: prev[idx] !== undefined ? !prev[idx] : false
-    }));
+    setExpandedIndices(prev => ({ ...prev, [idx]: prev[idx] !== undefined ? !prev[idx] : false }));
   };
 
   const toggleSynonyms = (defIdx: number) => {
-    setActiveSynonymIndex(prev => prev === defIdx ? null : defIdx);
+    setActiveSynonymIndex(prev => (prev === defIdx ? null : defIdx));
   };
 
   const handleCopyTargetClick = () => {
@@ -106,19 +149,16 @@ export const GoogleTranslateResultView: React.FC<GoogleTranslateResultViewProps>
   };
 
   const handleFeedbackClick = () => {
-    setFeedbackSubmitted(true);
-    onShowToast('شكراً لملاحظتك! سنعمل على تحسين دقة الترجمة.');
+    setShowOptionsMenu(false);
+    onShowToast('شكراً لملاحظتك! تم إرسالها لتحسين دقة الترجمة.');
   };
 
   const handleShareClick = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: 'ترجمة',
-          text: `${sourceText}\n\n${translatedText}`
-        });
+        await navigator.share({ title: 'ترجمة مهدي', text: `${sourceText}\n\n${shownTranslation}` });
       } catch {
-        // Cancelled
+        /* user cancelled */
       }
     } else {
       onCopyTarget();
@@ -127,265 +167,272 @@ export const GoogleTranslateResultView: React.FC<GoogleTranslateResultViewProps>
     setShowOptionsMenu(false);
   };
 
-  // Focus input automatically when requested
   const focusInput = () => {
-    setIsEditingSource(true);
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
-        inputRef.current.select();
+        const len = inputRef.current.value.length;
+        inputRef.current.setSelectionRange(len, len);
       }
-    }, 50);
+    }, 30);
   };
 
-  const displaySourceLangTag = detectedLangName || `${sourceLangName}، تم رصدها`;
+  const commitEdit = () => {
+    const next = customTargetText.trim();
+    setIsEditingTarget(false);
+    if (!next) {
+      setCustomTargetText('');
+      return;
+    }
+    if (onCommitTranslation) onCommitTranslation(next);
+    onShowToast('تم حفظ التعديل اليدوي للترجمة ✓');
+  };
+
+  const displaySourceLangTag = detectedLangName ? `${detectedLangName} — تم رصدها` : sourceLangName;
+  const hasResult = Boolean(shownTranslation.trim());
 
   return (
     <div className="w-full flex flex-col gap-4 text-right select-text" dir="rtl">
-      
-      {/* 1. TOP EDITABLE INPUT CARD (Matches the video at 00:03 - 00:15) */}
-      <div className="rounded-3xl bg-zinc-900/95 border border-white/10 shadow-2xl overflow-hidden p-4 sm:p-5 flex flex-col gap-2">
-        {/* Top Controls: Pencil, Clear X, Forward Arrow */}
+      {/* ============ 1. SOURCE — transparent glass box ============ */}
+      <section
+        className="mt-glass overflow-hidden p-4 sm:p-5 flex flex-col gap-2"
+        style={isFocused ? { borderColor: 'var(--mt-border-strong)' } : undefined}
+        aria-label="مربع النص الأصلي"
+      >
+        {/* Top controls */}
         <div className="flex items-center justify-between pb-1">
           <div className="flex items-center gap-1">
-            <button
-              onClick={focusInput}
-              className="p-1.5 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-              title="تعديل النص مباشرة"
-            >
+            <button onClick={focusInput} className="mt-icon-btn p-2" title="تعديل النص مباشرة" aria-label="تعديل النص">
               <Pen size={18} />
             </button>
+            {onPaste && (
+              <button onClick={onPaste} className="mt-icon-btn p-2" title="لصق من الحافظة" aria-label="لصق">
+                <ClipboardPaste size={18} />
+              </button>
+            )}
             <button
               onClick={onClear}
-              className="p-1.5 rounded-full hover:bg-white/10 text-zinc-400 hover:text-red-400 transition-colors"
+              className="mt-icon-btn p-2 hover:!text-[var(--mt-danger)]"
               title="مسح النص والبدء من جديد"
+              aria-label="مسح النص"
             >
               <X size={20} />
             </button>
           </div>
 
-          <button
-            onClick={focusInput}
-            className="p-1.5 rounded-full hover:bg-white/10 text-zinc-400 hover:text-amber-400 transition-colors rotate-180"
-            title="متابعة الإدخال"
-          >
-            <ArrowRight size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="mt-subtext text-[10px] font-mono tabular-nums opacity-70">
+              {sourceText.length > 0
+                ? `${sourceText.trim().split(/\s+/).filter(Boolean).length} كلمة · ${sourceText.length} حرف`
+                : ''}
+            </span>
+            <button onClick={focusInput} className="mt-icon-btn p-2 rotate-180" title="متابعة الإدخال" aria-label="متابعة الإدخال">
+              <ArrowRight size={20} />
+            </button>
+          </div>
         </div>
 
-        {/* The Live Editable Textarea (User can click on any word, move cursor, type and translate instantly) */}
-        <div className="relative w-full">
-          <textarea
-            ref={inputRef}
-            value={sourceText}
-            onChange={(e) => onSourceTextChange(e.target.value)}
-            placeholder="اكتب هنا..."
-            rows={Math.min(5, Math.max(1, sourceText.split('\n').length))}
-            className="w-full bg-transparent text-2xl sm:text-3xl font-bold text-white tracking-wide resize-none focus:outline-none placeholder:opacity-30 leading-snug"
-            style={{ direction: /[\u0600-\u06FF]/.test(sourceText) ? 'rtl' : 'ltr' }}
+        {/* Live editable textarea */}
+        <textarea
+          ref={inputRef}
+          value={sourceText}
+          onChange={(e) => onSourceTextChange(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder="اكتب أو الصق أي نص… وستُترجم فوراً"
+          rows={1}
+          className="mt-plain-input text-2xl sm:text-3xl font-bold tracking-wide leading-snug mt-heading"
+          style={{ direction: sourceDir }}
+          aria-label="النص الأصلي"
+        />
+
+        {/* Themed live progress line */}
+        <div className="mt-progress-track my-1" style={{ height: '3px' }}>
+          <div
+            className="mt-progress-bar"
+            style={{ width: isLoading ? '100%' : hasResult ? '100%' : '18%', opacity: isLoading ? 0.85 : hasResult ? 1 : 0.4 }}
           />
         </div>
 
-        {/* Animated Blue Progress Line (Matches Google Translate in video 00:04) */}
-        <div className="relative w-full h-[2.5px] bg-zinc-800 rounded-full overflow-hidden my-1">
-          <div 
-            className={`absolute top-0 bottom-0 bg-blue-500 rounded-full transition-all duration-300 ${
-              isLoading ? 'w-full animate-pulse' : 'w-full'
-            }`} 
-          />
-        </div>
-
-        {/* Source Language Tag & Source Audio/Copy Bar */}
+        {/* Language tag + source actions */}
         <div className="flex items-center justify-between pt-1">
-          <span className="text-xs font-semibold text-zinc-400 bg-zinc-800/80 px-3 py-1 rounded-full border border-white/5">
-            {displaySourceLangTag}
-          </span>
+          <span className="mt-chip">{displaySourceLangTag}</span>
 
           <div className="flex items-center gap-1">
             <button
               onClick={handleCopySourceClick}
-              className={`p-2 rounded-full transition-colors ${copiedSource ? 'text-emerald-400 bg-emerald-500/15' : 'text-zinc-400 hover:text-white hover:bg-white/10'}`}
+              className={`mt-icon-btn p-2 ${copiedSource ? 'mt-success-text' : ''}`}
               title="نسخ النص الأصلي"
+              aria-label="نسخ النص الأصلي"
             >
               {copiedSource ? <Check size={18} /> : <Copy size={18} />}
             </button>
-            <button
-              onClick={onSpeakSource}
-              className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-              title="استماع إلى النص الأصلي"
-            >
+            <button onClick={onSpeakSource} className="mt-icon-btn p-2" title="استماع إلى النص الأصلي" aria-label="استماع للنص الأصلي">
               <Volume2 size={18} />
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 2. TARGET TRANSLATION CARD (Appears seamlessly when sourceText or translatedText is present) */}
+      {/* ============ 2. TARGET — transparent glass box ============ */}
       {Boolean(sourceText.trim() || translatedText.trim()) && (
-      <div className="rounded-3xl bg-zinc-900/90 border border-white/10 shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col gap-2 backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-200">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-sky-400">
-            {targetLangName}
-          </span>
-          <button
-            onClick={() => setIsEditingTarget(!isEditingTarget)}
-            className="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1"
-            title="تعديل الترجمة يدوياً"
-          >
-            <Edit3 size={13} />
-            <span>تعديل</span>
-          </button>
-        </div>
-
-        {/* Primary Translation Big Text (Interactive: click to edit or copy) */}
-        {isEditingTarget ? (
-          <div className="flex flex-col gap-2">
-            <textarea
-              value={customTargetText || translatedText}
-              onChange={(e) => setCustomTargetText(e.target.value)}
-              className="w-full p-2.5 rounded-2xl bg-zinc-800 text-xl font-bold text-white border border-white/20 focus:outline-none focus:border-amber-400"
-              rows={2}
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setIsEditingTarget(false)}
-                className="px-3 py-1 rounded-xl bg-white/10 text-xs font-bold text-zinc-300 hover:bg-white/20"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={() => {
-                  setIsEditingTarget(false);
-                  onShowToast('تم حفظ التعديل اليدوي للترجمة');
-                }}
-                className="px-3 py-1 rounded-xl bg-amber-500 text-xs font-bold text-zinc-950 hover:bg-amber-400"
-              >
-                تطبيق
-              </button>
+        <section className="mt-glass mt-slide-up overflow-hidden p-4 sm:p-5 flex flex-col gap-2" aria-label="مربع الترجمة">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="mt-badge">{targetLangName}</span>
+              {isLoading && <span className="mt-spinner w-3.5 h-3.5" aria-label="جاري الترجمة" />}
             </div>
-          </div>
-        ) : (
-          <div 
-            onClick={() => setIsEditingTarget(true)}
-            className="text-2xl sm:text-4xl font-extrabold text-white tracking-wide leading-relaxed break-words cursor-pointer hover:opacity-90 transition-opacity"
-            title="انقر لتعديل الترجمة أو تحديد كلمات"
-          >
-            {customTargetText || translatedText || (isLoading ? 'جاري الترجمة...' : '')}
-          </div>
-        )}
-
-        {/* Transliteration Romanization (e.g. 'abtal, 'ahmad, lawn) */}
-        {transliteration && (
-          <div className="text-sm font-normal text-zinc-400 tracking-wider">
-            {transliteration}
-          </div>
-        )}
-
-        {/* Google Translate Action Buttons Row */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-zinc-800/80">
-          {/* Options Menu */}
-          <div className="relative">
             <button
-              onClick={() => setShowOptionsMenu(!showOptionsMenu)}
-              className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-              title="مزيد من الخيارات"
+              onClick={() => {
+                setCustomTargetText(shownTranslation);
+                setIsEditingTarget(!isEditingTarget);
+              }}
+              className="mt-icon-btn px-2 py-1 gap-1 text-[11px]"
+              title="تعديل الترجمة يدوياً"
             >
-              <MoreVertical size={19} />
+              <Edit3 size={13} />
+              <span>تعديل</span>
             </button>
+          </div>
 
-            {showOptionsMenu && (
-              <div className="absolute right-0 bottom-full mb-2 w-48 rounded-2xl bg-zinc-800 border border-zinc-700 shadow-2xl p-1.5 z-30 text-xs space-y-1">
+          {isEditingTarget ? (
+            <div className="flex flex-col gap-2">
+              <textarea
+                value={customTargetText}
+                onChange={(e) => setCustomTargetText(e.target.value)}
+                className="mt-textarea p-3 text-xl font-bold leading-relaxed"
+                style={{ direction: targetDir }}
+                rows={3}
+                autoFocus
+                aria-label="تعديل الترجمة"
+              />
+              <div className="flex justify-end gap-2">
                 <button
-                  onClick={handleShareClick}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-700/70 transition-colors"
+                  onClick={() => {
+                    setIsEditingTarget(false);
+                    setCustomTargetText('');
+                  }}
+                  className="mt-btn px-3 py-1.5 text-xs"
                 >
-                  <Share2 size={15} />
-                  <span>مشاركة الترجمة</span>
+                  <Undo2 size={13} />
+                  إلغاء
                 </button>
-                <button
-                  onClick={handleFeedbackClick}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-700/70 transition-colors"
-                >
-                  <ThumbsDown size={15} />
-                  <span>إرسال تعليقات</span>
+                <button onClick={commitEdit} className="mt-btn mt-btn-primary px-4 py-1.5 text-xs">
+                  <Check size={14} />
+                  تطبيق
                 </button>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div
+              onClick={() => {
+                setCustomTargetText(shownTranslation);
+                setIsEditingTarget(true);
+              }}
+              className="text-2xl sm:text-4xl font-extrabold tracking-wide leading-relaxed break-words cursor-text hover:opacity-90 transition-opacity mt-heading"
+              style={{ direction: targetDir, color: 'var(--mt-text)' }}
+              title="انقر لتعديل الترجمة أو تحديد كلمات"
+            >
+              {shownTranslation || (isLoading ? 'جاري الترجمة…' : '')}
+            </div>
+          )}
 
-          {/* Action Buttons: Fullscreen, Star/Save, Copy, Speaker */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {onOpenZoom && (
+          {transliteration && (
+            <div className="text-sm font-normal tracking-wider mt-subtext" style={{ direction: 'ltr', textAlign: 'left' }}>
+              {transliteration}
+            </div>
+          )}
+
+          {/* Action row */}
+          <div className="flex items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: 'var(--mt-border)' }}>
+            <div className="relative" ref={optionsRef}>
               <button
-                onClick={onOpenZoom}
-                className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-                title="عرض في وضع ملء الشاشة المكبر"
+                onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+                className="mt-icon-btn p-2"
+                data-active={showOptionsMenu}
+                title="مزيد من الخيارات"
+                aria-label="مزيد من الخيارات"
               >
-                <Maximize2 size={19} />
+                <MoreVertical size={19} />
               </button>
-            )}
 
-            <button
-              onClick={onToggleFavorite}
-              className={`p-2 rounded-full transition-colors ${
-                isFavorite 
-                  ? 'text-amber-400 bg-amber-500/20 fill-amber-400' 
-                  : 'text-zinc-400 hover:text-white hover:bg-white/10'
-              }`}
-              title={isFavorite ? 'إزالة من المفضلة' : 'حفظ في المفضلة'}
-            >
-              <Star size={19} className={isFavorite ? 'fill-amber-400 text-amber-400' : ''} />
-            </button>
+              {showOptionsMenu && (
+                <div className="mt-elevated absolute right-0 bottom-full mb-2 w-52 p-1.5 z-30 text-xs space-y-1 mt-slide-up">
+                  <button onClick={handleShareClick} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[var(--mt-surface)] transition-colors">
+                    <Share2 size={15} />
+                    <span>مشاركة الترجمة</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowOptionsMenu(false);
+                      handleCopyTargetClick();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[var(--mt-surface)] transition-colors"
+                  >
+                    <Copy size={15} />
+                    <span>نسخ الترجمة</span>
+                  </button>
+                  <button onClick={handleFeedbackClick} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[var(--mt-surface)] transition-colors">
+                    <ThumbsDown size={15} />
+                    <span>إرسال ملاحظة</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
-            <button
-              onClick={handleCopyTargetClick}
-              className={`p-2 rounded-full transition-colors ${
-                copiedTarget 
-                  ? 'text-emerald-400 bg-emerald-500/20' 
-                  : 'text-zinc-400 hover:text-white hover:bg-white/10'
-              }`}
-              title="نسخ الترجمة"
-            >
-              {copiedTarget ? <Check size={19} /> : <Copy size={19} />}
-            </button>
+            <div className="flex items-center gap-1 sm:gap-2">
+              {onOpenZoom && (
+                <button onClick={onOpenZoom} className="mt-icon-btn p-2" title="عرض مكبّر بملء الشاشة" aria-label="تكبير">
+                  <Maximize2 size={19} />
+                </button>
+              )}
 
-            <button
-              onClick={onSpeakTarget}
-              className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-              title="استماع إلى الترجمة"
-            >
-              <Volume2 size={20} />
-            </button>
+              <button
+                onClick={onToggleFavorite}
+                className="mt-icon-btn p-2"
+                data-active={isFavorite}
+                title={isFavorite ? 'إزالة من المفضلة' : 'حفظ في المفضلة'}
+                aria-label="المفضلة"
+              >
+                <Star size={19} className={isFavorite ? 'fill-[var(--mt-accent)]' : ''} />
+              </button>
+
+              <button
+                onClick={handleCopyTargetClick}
+                className={`mt-icon-btn p-2 ${copiedTarget ? 'mt-success-text' : ''}`}
+                title="نسخ الترجمة"
+                aria-label="نسخ الترجمة"
+              >
+                {copiedTarget ? <Check size={19} /> : <Copy size={19} />}
+              </button>
+
+              <button onClick={onSpeakTarget} className="mt-icon-btn p-2" title="استماع إلى الترجمة" aria-label="استماع للترجمة">
+                <Volume2 size={20} />
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
       )}
 
-      {/* 3. ترجمات أكثر (More Translations Card) matching Video Screenshot 3 */}
-      {moreTranslations && moreTranslations.length > 0 && (
-        <div className="rounded-3xl bg-zinc-900/85 border border-white/10 shadow-lg overflow-hidden backdrop-blur-md">
-          <div className="flex items-center justify-between p-4 border-b border-zinc-800/80">
-            <div className="flex items-center gap-2 text-sm font-bold text-white">
-              <BookOpen size={16} className="text-sky-400" />
+      {/* ============ 3. More translations ============ */}
+      {moreTranslations.length > 0 && (
+        <section className="mt-glass overflow-hidden" style={{ borderRadius: 'var(--mt-radius)' }} aria-label="ترجمات أكثر">
+          <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--mt-border)' }}>
+            <div className="flex items-center gap-2 text-sm font-bold">
+              <BookOpen size={16} className="mt-accent-text" />
               <span>ترجمات أكثر</span>
             </div>
-            <button
-              onClick={() => setExpandAllMore(!expandAllMore)}
-              className="text-xs font-semibold text-sky-400 hover:text-sky-300 transition-colors"
-            >
+            <button onClick={() => setExpandAllMore(!expandAllMore)} className="mt-chip" data-active={!expandAllMore}>
               {expandAllMore ? 'طي الكل' : 'توسيع الكل'}
             </button>
           </div>
 
-          <div className="divide-y divide-zinc-800/50">
+          <div className="divide-y" style={{ borderColor: 'var(--mt-border)' }}>
             {moreTranslations.map((item, idx) => {
               const isExpanded = expandedIndices[idx] !== undefined ? expandedIndices[idx] : expandAllMore;
               return (
-                <div key={idx} className="p-3.5 hover:bg-white/[0.02] transition-colors">
-                  <div 
-                    className="flex items-center justify-between cursor-pointer"
-                    onClick={() => toggleIndex(idx)}
-                  >
+                <div key={idx} className="p-3.5 hover:bg-[var(--mt-surface)] transition-colors" style={{ borderColor: 'var(--mt-border)' }}>
+                  <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleIndex(idx)}>
                     <div className="flex items-center gap-2.5">
                       <button
                         onClick={(e) => {
@@ -397,31 +444,25 @@ export const GoogleTranslateResultView: React.FC<GoogleTranslateResultViewProps>
                             onShowToast(`تم اختيار الترجمة: ${item.phrase}`);
                           }
                         }}
-                        className="text-base font-bold text-zinc-100 hover:text-sky-400 transition-colors text-right"
-                        title="انقر لاعتماد هذه الكلمة"
+                        className="text-base font-bold hover:text-[var(--mt-accent)] transition-colors text-right"
+                        title="انقر لاعتماد هذه الترجمة"
                       >
                         {item.phrase}
                       </button>
-                      {item.partOfSpeech && (
-                        <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-800/90 text-zinc-400 font-medium border border-white/5">
-                          {item.partOfSpeech}
-                        </span>
-                      )}
+                      {item.partOfSpeech && <span className="mt-badge">{item.partOfSpeech}</span>}
                     </div>
-                    <button className="text-zinc-500 hover:text-zinc-300 p-1">
+                    <button className="mt-icon-btn p-1" aria-label={isExpanded ? 'طي' : 'توسيع'}>
                       {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
                   </div>
 
-                  {isExpanded && item.reverseTranslations && item.reverseTranslations.length > 0 && (
-                    <div className="mt-2 text-xs text-zinc-400 font-mono tracking-wide flex flex-wrap gap-1.5 pr-1">
+                  {isExpanded && item.reverseTranslations?.length > 0 && (
+                    <div className="mt-2 text-xs font-mono tracking-wide flex flex-wrap gap-1.5 pr-1 mt-subtext">
                       {item.reverseTranslations.map((rev, rIdx) => (
-                        <button 
-                          key={rIdx} 
-                          onClick={() => {
-                            if (onSelectSynonym) onSelectSynonym(rev);
-                          }}
-                          className="hover:text-amber-400 hover:underline cursor-pointer"
+                        <button
+                          key={rIdx}
+                          onClick={() => onSelectSynonym?.(rev)}
+                          className="hover:text-[var(--mt-accent)] hover:underline cursor-pointer"
                           title="انقر لترجمة هذه الكلمة العكسية"
                         >
                           {rev}{rIdx < item.reverseTranslations.length - 1 ? '،' : ''}
@@ -433,92 +474,75 @@ export const GoogleTranslateResultView: React.FC<GoogleTranslateResultViewProps>
               );
             })}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* 4. تعريفات الكلمة والمرادفات (Definitions & Synonyms Chips) matching Video at 00:08 & 00:41 */}
-      {definitions && definitions.length > 0 && (
-        <div className="rounded-3xl bg-zinc-900/85 border border-white/10 shadow-lg overflow-hidden backdrop-blur-md">
-          <div className="p-4 border-b border-zinc-800/80">
-            <div className="flex items-center gap-2 text-sm font-bold text-white">
-              <Sparkles size={16} className="text-amber-400" />
-              <span>تعريفات {sourceText}</span>
+      {/* ============ 4. Definitions & synonyms ============ */}
+      {definitions.length > 0 && (
+        <section className="mt-glass overflow-hidden" style={{ borderRadius: 'var(--mt-radius)' }} aria-label="التعريفات والمرادفات">
+          <div className="p-4 border-b" style={{ borderColor: 'var(--mt-border)' }}>
+            <div className="flex items-center gap-2 text-sm font-bold">
+              <Sparkles size={16} className="mt-accent-text" />
+              <span>تعريفات «{sourceText.slice(0, 40)}{sourceText.length > 40 ? '…' : ''}»</span>
             </div>
           </div>
 
           <div className="p-4 space-y-5">
             {definitions.map((def, idx) => (
-              <div key={idx} className="space-y-2 border-b border-zinc-800/50 pb-4 last:border-b-0 last:pb-0">
+              <div key={idx} className="space-y-2 border-b pb-4 last:border-b-0 last:pb-0" style={{ borderColor: 'var(--mt-border)' }}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-amber-400">
-                      {def.partOfSpeech}
-                    </span>
-                    {def.number && (
-                      <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-[11px] flex items-center justify-center font-bold border border-blue-500/30">
-                        {def.number}
-                      </span>
-                    )}
+                    <span className="text-xs font-bold mt-accent-text">{def.partOfSpeech}</span>
+                    {def.number > 0 && <span className="mt-badge">{def.number}</span>}
                   </div>
 
-                  {/* The Synonyms Button "المرادفات" */}
                   {def.synonyms && def.synonyms.length > 0 && (
-                    <button
-                      onClick={() => toggleSynonyms(idx)}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 border ${
-                        activeSynonymIndex === idx
-                          ? 'bg-blue-500 text-white border-blue-400 shadow-md shadow-blue-500/20'
-                          : 'bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20'
-                      }`}
-                    >
-                      <span>المرادفات</span>
-                      <ChevronDown 
-                        size={13} 
-                        className={`transition-transform duration-200 ${activeSynonymIndex === idx ? 'rotate-180' : ''}`} 
-                      />
+                    <button onClick={() => toggleSynonyms(idx)} className="mt-chip" data-active={activeSynonymIndex === idx}>
+                      <span>المرادفات ({def.synonyms.length})</span>
+                      <ChevronDown size={13} className={`transition-transform duration-200 ${activeSynonymIndex === idx ? 'rotate-180' : ''}`} />
                     </button>
                   )}
                 </div>
 
-                {/* Definition Text in English / Arabic */}
-                <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed pr-1" style={{ direction: 'ltr' }}>
+                <p className="text-xs sm:text-sm leading-relaxed pr-1 mt-subtext" style={{ direction: detectDir(def.definition) }}>
                   {def.definition}
                 </p>
 
-                {/* Usage Example */}
                 {def.example && (
-                  <div className="text-xs italic text-zinc-400 border-l-2 border-zinc-700 pl-2 my-1" style={{ direction: 'ltr' }}>
+                  <div className="text-xs italic border-r-2 pr-2 my-1 mt-subtext" style={{ borderColor: 'var(--mt-border-strong)', direction: detectDir(def.example) }}>
                     {def.example}
                   </div>
                 )}
 
-                {/* Interactive Synonym Chips (Tapping any synonym instantly updates input and translates!) */}
                 {def.synonyms && def.synonyms.length > 0 && activeSynonymIndex === idx && (
-                  <div className="mt-3 pt-2">
-                    <div className="flex flex-wrap gap-2 justify-start" style={{ direction: 'ltr' }}>
-                      {def.synonyms.map((syn, sIdx) => (
-                        <button
-                          key={sIdx}
-                          onClick={() => {
-                            if (onSelectSynonym) {
-                              onSelectSynonym(syn);
-                            } else {
-                              onSourceTextChange(syn);
-                            }
-                            onShowToast(`تم اختيار المرادف: ${syn}`);
-                          }}
-                          className="px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-blue-600 hover:text-white text-zinc-200 text-xs font-semibold border border-white/10 transition-all hover:scale-105 active:scale-95 shadow-sm"
-                          title={`انقر لترجمة: ${syn}`}
-                        >
-                          {syn}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="mt-3 pt-2 flex flex-wrap gap-2 justify-start" style={{ direction: 'ltr' }}>
+                    {def.synonyms.map((syn, sIdx) => (
+                      <button
+                        key={sIdx}
+                        onClick={() => {
+                          if (onSelectSynonym) onSelectSynonym(syn);
+                          else onSourceTextChange(syn);
+                          onShowToast(`تم اختيار المرادف: ${syn}`);
+                        }}
+                        className="mt-chip hover:scale-105 active:scale-95 transition-transform"
+                        title={`انقر لترجمة: ${syn}`}
+                      >
+                        {syn}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* Signature line — subtle, themed */}
+      {hasResult && (
+        <div className="flex items-center justify-center gap-2 text-[10px] opacity-45 select-none">
+          <Sparkles size={11} className="mt-accent-text" />
+          <span>{theme.nameAr}</span>
         </div>
       )}
     </div>

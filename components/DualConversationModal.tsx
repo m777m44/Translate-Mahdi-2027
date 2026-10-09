@@ -216,21 +216,21 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
   const displayedMessages = sortOrder === 'chronological' ? messages : [...messages].reverse();
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col w-full h-full bg-zinc-950/98 text-white backdrop-blur-2xl animate-in slide-in-from-bottom-4 duration-300 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex flex-col w-full h-full mt-sheet overflow-hidden">
       <div 
         className={`w-full h-full flex flex-col ${theme.card} ${theme.text} overflow-hidden`}
         dir="rtl"
       >
         {/* Compact Header */}
-        <div className="flex items-center justify-between px-4 sm:px-8 py-3.5 border-b border-white/10 bg-black/30 shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-8 py-3.5 border-b mt-hairline mt-sheet-header shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <div className="p-2 rounded-xl mt-accent-soft mt-accent-text border mt-hairline">
               <Languages className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <h2 className="text-sm sm:text-base font-bold tracking-tight">المحادثة الصوتية الثنائية (Dual Speaker)</h2>
-                <span className="px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded-md mt-accent-soft mt-accent-text border mt-hairline">
                   صوت-إلى-صوت
                 </span>
               </div>
@@ -245,16 +245,16 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
             {/* Scroll Navigation & Ordering */}
             <button
               onClick={() => setSortOrder(prev => prev === 'chronological' ? 'reverse' : 'chronological')}
-              className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 text-xs flex items-center gap-1 transition-all"
+              className="px-2.5 py-1.5 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] mt-subtext text-xs flex items-center gap-1 transition-all"
               title={sortOrder === 'chronological' ? 'الترتيب: الأقدم أولاً (انقر للتبديل)' : 'الترتيب: الأحدث أولاً (انقر للتبديل)'}
             >
-              <ArrowUpDown className="w-3.5 h-3.5 text-amber-400" />
+              <ArrowUpDown className="w-3.5 h-3.5 mt-accent-text" />
               <span className="hidden sm:inline">{sortOrder === 'chronological' ? 'الأقدم أولاً' : 'الأحدث أولاً'}</span>
             </button>
 
             <button
               onClick={scrollToTop}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 transition-all"
+              className="p-2 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] mt-subtext transition-all"
               title="التمرير لأعلى المحادثة"
             >
               <ArrowUp className="w-4 h-4" />
@@ -262,7 +262,7 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
 
             <button
               onClick={scrollToBottom}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 transition-all"
+              className="p-2 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] mt-subtext transition-all"
               title="التمرير لأسفل المحادثة"
             >
               <ArrowDown className="w-4 h-4" />
@@ -272,14 +272,14 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
               <>
                 <button
                   onClick={exportConversation}
-                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 transition-all"
+                  className="p-2 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] mt-subtext transition-all"
                   title="تصدير نص المحادثة"
                 >
                   <Download className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setMessages([])}
-                  className="p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 transition-all"
+                  className="p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 mt-danger-text transition-all"
                   title="مسح المحادثة"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -289,7 +289,7 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
 
             <button 
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-zinc-200 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
+              className="px-3.5 py-1.5 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] hover:text-[var(--mt-text)] transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
               title="إغلاق والعودة"
             >
               <X className="w-4 h-4" />
@@ -299,16 +299,16 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
         </div>
 
         {/* Compact Language Selector Bar */}
-        <div className="px-3 sm:px-5 py-2 border-b border-white/5 bg-black/10 flex items-center justify-between gap-2 shrink-0 text-xs">
+        <div className="px-3 sm:px-5 py-2 border-b mt-hairline mt-surface-soft flex items-center justify-between gap-2 shrink-0 text-xs">
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            <span className="font-bold text-amber-400 shrink-0 text-[11px]">الطرف (أ):</span>
+            <span className="font-bold mt-accent-text shrink-0 text-[11px]">الطرف (أ):</span>
             <select
               value={speakerALang}
               onChange={(e) => setSpeakerALang(e.target.value)}
-              className="px-2 py-1 rounded-xl bg-white/5 border border-white/10 text-xs focus:outline-none focus:border-amber-500 w-full max-w-[140px]"
+              className="px-2 py-1 rounded-xl mt-surface-soft border mt-hairline text-xs focus:outline-none focus:border-[var(--mt-accent)] w-full max-w-[140px]"
             >
               {LANGUAGES.map(l => (
-                <option key={l.code} value={l.code} className="bg-zinc-900 text-white">
+                <option key={l.code} value={l.code} className="mt-surface-soft">
                   {l.flag} {l.nativeName}
                 </option>
               ))}
@@ -317,21 +317,21 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
 
           <button
             onClick={swapLanguages}
-            className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 text-zinc-300 transition-all active:scale-95 shrink-0"
+            className="p-1.5 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] mt-subtext transition-all active:scale-95 shrink-0"
             title="تبديل اللغتين"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
           </button>
 
           <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
-            <span className="font-bold text-indigo-400 shrink-0 text-[11px]">الطرف (ب):</span>
+            <span className="font-bold mt-accent-text shrink-0 text-[11px]">الطرف (ب):</span>
             <select
               value={speakerBLang}
               onChange={(e) => setSpeakerBLang(e.target.value)}
-              className="px-2 py-1 rounded-xl bg-white/5 border border-white/10 text-xs focus:outline-none focus:border-indigo-500 w-full max-w-[140px]"
+              className="px-2 py-1 rounded-xl mt-surface-soft border mt-hairline text-xs focus:outline-none focus:border-[var(--mt-accent)] w-full max-w-[140px]"
             >
               {LANGUAGES.map(l => (
-                <option key={l.code} value={l.code} className="bg-zinc-900 text-white">
+                <option key={l.code} value={l.code} className="mt-surface-soft">
                   {l.flag} {l.nativeName}
                 </option>
               ))}
@@ -344,7 +344,7 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
           <div ref={messagesTopRef} />
           {displayedMessages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-60 p-4">
-              <Languages className="w-10 h-10 mb-2 opacity-40 text-amber-400" />
+              <Languages className="w-10 h-10 mb-2 opacity-40 mt-accent-text" />
               <p className="text-xs font-bold">ابدأ المحادثة الآن</p>
               <p className="text-[11px] mt-1 max-w-xs">
                 اضغط على ميكروفون الطرف (أ) أو الطرف (ب) في الأسفل للتحدث وسيقوم مهدي بترجمة ونطق الجمل فورياً
@@ -360,7 +360,7 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                 >
                   <div className={`max-w-[85%] sm:max-w-[75%] p-3 rounded-2xl border ${
                     isSpeakerA 
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-100 rounded-tr-none' 
+                      ? 'mt-accent-soft mt-hairline text-amber-100 rounded-tr-none' 
                       : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-100 rounded-tl-none'
                   }`}>
                     <div className="flex items-center justify-between gap-2 mb-1 text-[10px] opacity-70">
@@ -372,11 +372,11 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                     <p className="text-xs sm:text-sm font-medium mb-1.5 opacity-90">{msg.sourceText}</p>
 
                     {/* Translated Text with Speaker button */}
-                    <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
-                      <p className="text-xs sm:text-sm font-bold text-amber-300">{msg.translatedText}</p>
+                    <div className="pt-2 border-t mt-hairline flex items-center justify-between gap-2">
+                      <p className="text-xs sm:text-sm font-bold mt-accent-text">{msg.translatedText}</p>
                       <button
                         onClick={() => speakText(msg.translatedText, isSpeakerA ? speakerBLang : speakerALang, ttsSettings)}
-                        className="p-1 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+                        className="p-1 rounded-lg hover:bg-[var(--mt-surface)] hover:text-[var(--mt-text)] transition-colors"
                         title="إعادة نطق الترجمة"
                       >
                         <Volume2 className="w-3.5 h-3.5" />
@@ -391,12 +391,12 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
         </div>
 
         {/* Dual Input Docks (Side-by-side on tablet/desktop, stacked on mobile) */}
-        <div className="p-2 sm:p-3 border-t border-white/10 bg-black/25 shrink-0">
+        <div className="p-2 sm:p-3 border-t mt-hairline mt-sheet-header shrink-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             
             {/* Speaker A Input Dock (Compact) */}
-            <div className="p-2 sm:p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] font-bold text-amber-400">
+            <div className="p-2 sm:p-2.5 rounded-2xl mt-accent-soft border border-amber-500/20 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-bold mt-accent-text">
                 <span>المتحدث الأول (طرف أ)</span>
                 <span className="text-[10px] opacity-60">
                   {LANGUAGES.find(l => l.code === speakerALang)?.nativeName}
@@ -409,14 +409,14 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                   onChange={(e) => setInputA(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendSpeakerA()}
                   placeholder="اكتب هنا أو انقر الميكروفون..."
-                  className="flex-1 px-2.5 py-1.5 text-xs rounded-xl bg-black/30 border border-white/10 focus:outline-none focus:border-amber-500 text-white"
+                  className="flex-1 px-2.5 py-1.5 text-xs rounded-xl bg-black/30 border mt-hairline focus:outline-none focus:border-[var(--mt-accent)]"
                 />
                 <button
                   onClick={() => startVoiceInput('A')}
                   className={`p-2 rounded-xl text-xs font-bold transition-all ${
                     isListeningA 
-                      ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/50' 
-                      : 'bg-amber-500 text-zinc-950 hover:bg-amber-400'
+                      ? 'bg-[var(--mt-danger)]  animate-pulse shadow-lg ' 
+                      : 'mt-btn-primary hover:bg-amber-400'
                   }`}
                   title="تحدث بالصوت"
                 >
@@ -425,7 +425,7 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                 <button
                   onClick={handleSendSpeakerA}
                   disabled={!inputA.trim() || isTranslating}
-                  className="p-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 disabled:opacity-30 text-xs font-bold"
+                  className="p-2 rounded-xl mt-accent-soft hover:bg-amber-500/30 mt-accent-text disabled:opacity-30 text-xs font-bold"
                   title="إرسال وترجمة"
                 >
                   <Send className="w-3.5 h-3.5 rotate-180" />
@@ -435,7 +435,7 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
 
             {/* Speaker B Input Dock (Compact) */}
             <div className="p-2 sm:p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] font-bold text-indigo-400">
+              <div className="flex items-center justify-between text-[11px] font-bold mt-accent-text">
                 <span>المتحدث الثاني (طرف ب)</span>
                 <span className="text-[10px] opacity-60">
                   {LANGUAGES.find(l => l.code === speakerBLang)?.nativeName}
@@ -448,14 +448,14 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                   onChange={(e) => setInputB(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendSpeakerB()}
                   placeholder="Type here or tap microphone..."
-                  className="flex-1 px-2.5 py-1.5 text-xs rounded-xl bg-black/30 border border-white/10 focus:outline-none focus:border-indigo-500 text-white"
+                  className="flex-1 px-2.5 py-1.5 text-xs rounded-xl bg-black/30 border mt-hairline focus:outline-none focus:border-[var(--mt-accent)]"
                 />
                 <button
                   onClick={() => startVoiceInput('B')}
                   className={`p-2 rounded-xl text-xs font-bold transition-all ${
                     isListeningB 
-                      ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/50' 
-                      : 'bg-indigo-500 text-white hover:bg-indigo-400'
+                      ? 'bg-[var(--mt-danger)]  animate-pulse shadow-lg ' 
+                      : 'bg-indigo-500  hover:bg-indigo-400'
                   }`}
                   title="تحدث بالصوت"
                 >
@@ -464,7 +464,7 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                 <button
                   onClick={handleSendSpeakerB}
                   disabled={!inputB.trim() || isTranslating}
-                  className="p-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 disabled:opacity-30 text-xs font-bold"
+                  className="p-2 rounded-xl mt-accent-soft hover:bg-indigo-500/30 text-indigo-300 disabled:opacity-30 text-xs font-bold"
                   title="إرسال وترجمة"
                 >
                   <Send className="w-3.5 h-3.5 rotate-180" />

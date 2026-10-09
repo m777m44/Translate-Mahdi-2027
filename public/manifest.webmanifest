@@ -1,0 +1,66 @@
+{
+  "name": "Mahdi Translate Pro — مترجم مهدي",
+  "short_name": "Mahdi Translate",
+  "description": "مترجم احترافي متعدد اللغات بواجهة عربية مع 1544 ثيم ومزامنة سحابية للسجل",
+  "lang": "ar",
+  "dir": "rtl",
+  "scope": "/",
+  "start_url": "/?source=pwa",
+  "id": "mahdi-translate-pro",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#070a12",
+  "theme_color": "#070a12",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "ترجمة سريعة",
+      "short_name": "ترجمة",
+      "description": "افتح المترجم مباشرة",
+      "url": "/?action=translate",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mahdi Translate Pro"
+    }
+  ]
+}
