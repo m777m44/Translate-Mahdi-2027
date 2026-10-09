@@ -21,7 +21,8 @@ import {
   DIALECTS,
   DEFAULT_APP_SETTINGS
 } from './constants.ts';
-import { THEMES_LIST, DEFAULT_THEME_ID } from './themeRegistry.ts';
+import { useTheme } from './themeContext.tsx';
+import { ThemeGallery } from './components/ThemeGallery.tsx';
 import { translateText, speakText, translateImage, compareEngines } from './geminiService.ts';
 import { translateOffline } from './offlineEngine.ts';
 import { 
@@ -46,6 +47,14 @@ import { HandwritingModal } from './components/HandwritingModal.tsx';
 import { GoogleTranslateResultView } from './components/GoogleTranslateResultView.tsx';
 import { AdvancedTwoBoxLayout } from './components/AdvancedTwoBoxLayout.tsx';
 import { GoogleAuthModal, GoogleUser } from './components/GoogleAuthModal.tsx';
+import { InstallAppButton } from './components/InstallAppButton.tsx';
+import {
+  syncHistory,
+  getSignedInUser,
+  signOutUser as cloudSignOut,
+  readCloudStatus,
+  CloudHistoryItem,
+} from './cloudSyncService.ts';
 import { MoreTranslation, WordDefinition } from './types.ts';
 import { 
   Languages, 
@@ -104,16 +113,14 @@ declare global {
 const AVAILABLE_VOICES = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Zephyr'];
 
 export const App: React.FC = () => {
-  // Theme state from 125+ themes
-  const [currentTheme, setCurrentTheme] = useState<ThemeConfig>(() => {
-    try {
-      const savedThemeId = localStorage.getItem('mahdi_theme_id');
-      const found = THEMES_LIST.find(t => t.id === savedThemeId);
-      return found || THEMES_LIST[0];
-    } catch {
-      return THEMES_LIST[0];
-    }
-  });
+  // Theme engine: 1500+ themes, applied globally through CSS custom properties.
+  const {
+    theme: currentTheme,
+    setTheme: setCurrentTheme,
+    appearance,
+    updateAppearance,
+    total: themeTotal,
+  } = useTheme();
 
   // UI Scale / Zoom with direct user numeric input modal
   const [zoom, setZoom] = useState<ZoomLevel>(() => {
@@ -200,6 +207,7 @@ export const App: React.FC = () => {
 
   // Advanced feature modals
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isThemeGalleryOpen, setIsThemeGalleryOpen] = useState<boolean>(false);
   const [isProSettingsOpen, setIsProSettingsOpen] = useState<boolean>(false);
   const [isFloatingOpen, setIsFloatingOpen] = useState<boolean>(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
@@ -291,17 +299,27 @@ export const App: React.FC = () => {
 
   // Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
 
   const lastTranslatedText = useRef<string>('');
   const recognitionRef = useRef<any>(null);
+  // Late-bound action refs used by the global keyboard shortcuts.
+  const translateNowRef = useRef<() => void>(() => {});
+  const toggleListeningRef = useRef<() => void>(() => {});
+  const swapLanguagesRef = useRef<() => void>(() => {});
+  /** Monotonic id used to drop stale translation responses (race protection). */
+  const requestSeq = useRef<number>(0);
 
-  // Toast helper
-  const showToast = (msg: string) => {
+  // Toast helper (single timer — new toasts replace the pending dismissal).
+  const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 2500);
-  };
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToastMessage(null), 2600);
+  }, []);
+
+  useEffect(() => () => {
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+  }, []);
 
   // Automatic Language Detection Effect
   useEffect(() => {
@@ -373,11 +391,7 @@ export const App: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('mahdi_theme_id', currentTheme.id);
-    } catch {}
-  }, [currentTheme]);
+  // Theme id + appearance are persisted by the ThemeProvider (debounced).
 
   useEffect(() => {
     try {
@@ -404,36 +418,103 @@ export const App: React.FC = () => {
     } catch {}
   }, [ttsSettings]);
 
-  // Speech Recognition (Voice-to-Text)
+  // Speech Recognition (Voice-to-Text) — continuous with live interim results so
+  // spoken words appear (and get translated) while the user is still talking.
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      const actualLangCode = sourceLang === 'auto' ? (detectedLangCode || 'ar') : sourceLang;
-      const bcp47 = LANG_BCP47_MAP[actualLangCode] || actualLangCode;
-      recognition.lang = bcp47;
+    if (!SpeechRecognition) return;
 
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputText(prev => prev ? `${prev} ${transcript}` : transcript);
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    const actualLangCode = sourceLang === 'auto' ? (detectedLangCode || 'ar') : sourceLang;
+    recognition.lang = LANG_BCP47_MAP[actualLangCode] || actualLangCode;
+
+    /** Finalised speech accumulated during this listening session. */
+    let finalTranscript = '';
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const chunk = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalTranscript += `${finalTranscript ? ' ' : ''}${chunk.trim()}`;
+        else interim += chunk;
+      }
+      const combined = [finalTranscript, interim.trim()].filter(Boolean).join(' ');
+      if (!combined) return;
+      // Replace the in-progress segment instead of appending duplicates.
+      setInputText(prev => {
+        const base = prev.endsWith('…') ? prev.slice(0, -1).trim() : prev;
+        return base ? `${base} ${combined}` : combined;
+      });
+    };
+
+    recognition.onerror = (event: any) => {
+      // 'no-speech' / 'aborted' are normal during continuous listening.
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        setError('تم رفض إذن الوصول للميكروفون. يرجى السماح بالوصول في المتصفح.');
         setIsListening(false);
-        showToast('تم التقاط الصوت بنجاح ✓');
-      };
+      } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
+        console.warn('Speech recognition:', event.error);
+      }
+    };
 
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
-        setIsListening(false);
-        if (event.error === 'not-allowed') {
-          setError('تم رفض إذن الوصول للميكروفون. يرجى السماح بالوصول في المتصفح.');
-        }
-      };
+    recognition.onend = () => {
+      setIsListening(false);
+      if (finalTranscript.trim()) showToast('تم التقاط الصوت وترجمته ✓');
+    };
 
-      recognition.onend = () => setIsListening(false);
-      recognitionRef.current = recognition;
+    recognitionRef.current = recognition;
+    return () => {
+      try { recognition.stop(); } catch {}
+    };
+  }, [sourceLang, detectedLangCode, showToast]);
+
+
+  // Keep the accessibility flag from the settings panel in sync with the theme engine.
+  useEffect(() => {
+    if (appearance.highContrast !== appSettings.highContrast) {
+      updateAppearance({ highContrast: appSettings.highContrast });
     }
-  }, [sourceLang, detectedLangCode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appSettings.highContrast]);
+
+  // Global keyboard shortcuts (uses refs so the handler always sees fresh closures)
+  useEffect(() => {
+    if (!appSettings.keyboardShortcuts) return;
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      if (key === 'k') {
+        e.preventDefault();
+        setIsThemeGalleryOpen(v => !v);
+      } else if (key === 'enter') {
+        e.preventDefault();
+        translateNowRef.current();
+      } else if (key === 'm') {
+        e.preventDefault();
+        toggleListeningRef.current();
+      } else if (key === 'd') {
+        e.preventDefault();
+        swapLanguagesRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [appSettings.keyboardShortcuts]);
+
+  // Purge history entries older than the configured retention window.
+  useEffect(() => {
+    const days = appSettings.autoClearHistoryDays;
+    if (!days || days <= 0) return;
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    setHistory(prev => {
+      const next = prev.filter(i => (i.timestamp || 0) >= cutoff);
+      return next.length === prev.length ? prev : next;
+    });
+  }, [appSettings.autoClearHistoryDays]);
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
@@ -455,6 +536,30 @@ export const App: React.FC = () => {
     }
   };
 
+  // ---- Translation memory helpers -----------------------------------------
+  /** Bounded (LRU) translation cache so memory never grows without limit. */
+  const cachePut = useCallback((key: string, value: string) => {
+    const map = translationCache.current;
+    map.set(key, value);
+    if (map.size > 400) {
+      const oldest = map.keys().next().value;
+      if (oldest !== undefined) map.delete(oldest);
+    }
+  }, []);
+
+  /** Stores a translation, honouring Private Mode and the configured history limit. */
+  const rememberTranslation = useCallback(
+    (item: Omit<TranslationHistoryItem, 'id' | 'timestamp'>) => {
+      if (appSettings.privateModeNoHistory) return;
+      const limit = Math.max(10, appSettings.historyLimit || 50);
+      setHistory(prev => [
+        { ...item, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, timestamp: Date.now() },
+        ...prev.filter(i => i.sourceText !== item.sourceText),
+      ].slice(0, limit));
+    },
+    [appSettings.privateModeNoHistory, appSettings.historyLimit]
+  );
+
   // Translation Handler (Online AI + Local Offline Engine + Auto Detect)
   const handleTranslate = useCallback(async (text: string) => {
     const trimmed = text.trim();
@@ -462,6 +567,11 @@ export const App: React.FC = () => {
       if (!trimmed) setResultText('');
       return;
     }
+
+    // Every request gets a sequence number; stale responses are discarded so a
+    // slow reply can never overwrite the translation of newer text.
+    const seq = ++requestSeq.current;
+    const isStale = () => seq !== requestSeq.current;
 
     // Instant check in-memory cache for 0ms retrieval
     const cacheKey = `${trimmed}__${sourceLang}__${targetLang}__${selectedDomain}__${selectedTone}__${selectedDialect}`;
@@ -488,30 +598,35 @@ export const App: React.FC = () => {
           domain: selectedDomain,
           dialect: selectedDialect
         });
+        if (isStale()) return;
         setResultText(offlineRes.translation);
         setTransliteration(offlineRes.transliteration || '');
         setDetectedLangBanner(offlineRes.detectedLanguageName || '');
         setMoreTranslations(offlineRes.moreTranslations || []);
         setDefinitions(offlineRes.definitions || []);
-        translationCache.current.set(cacheKey, offlineRes.translation);
+        cachePut(cacheKey, offlineRes.translation);
         setTranslationEngine('offline');
         lastTranslatedText.current = trimmed;
 
-        const newItem: TranslationHistoryItem = {
-          id: Date.now().toString(),
+        rememberTranslation({
           sourceText: trimmed,
           translatedText: offlineRes.translation,
           sourceLang,
           targetLang,
-          timestamp: Date.now(),
           mode: 'offline',
+          domain: selectedDomain,
+          tone: selectedTone,
+          dialect: selectedDialect,
           detectedLang: sourceLang === 'auto' ? activeFrom : undefined,
-        };
-        setHistory(prev => [newItem, ...prev.filter(i => i.sourceText !== trimmed)].slice(0, 50));
+        });
+
+        if (appSettings.autoSpeakTarget) {
+          speakText(offlineRes.translation, targetLang, ttsSettings);
+        }
       } catch (err: any) {
-        setError('تعذر إتمام الترجمة المحلية.');
+        if (!isStale()) setError('تعذر إتمام الترجمة المحلية.');
       } finally {
-        setIsLoading(false);
+        if (!isStale()) setIsLoading(false);
       }
       return;
     }
@@ -522,31 +637,44 @@ export const App: React.FC = () => {
         domain: selectedDomain,
         tone: selectedTone,
         dialect: selectedDialect,
-        includeAnalysis: false
+        includeAnalysis: false,
+        accuracy: appSettings.accuracyLevel,
+        engine: appSettings.defaultEngine,
+        preserveFormatting: appSettings.preserveFormatting,
+        translateNumbers: appSettings.translateNumbers,
       });
+      if (isStale()) return;
       setResultText(result.translation);
       setTransliteration(result.transliteration || '');
       setDetectedLangBanner(result.detectedLanguageName || '');
       setMoreTranslations(result.moreTranslations || []);
       setDefinitions(result.definitions || []);
-      translationCache.current.set(cacheKey, result.translation);
+      cachePut(cacheKey, result.translation);
       if (result.analysis) setAiAnalysis(result.analysis);
       setTranslationEngine('online');
       setError(null);
       lastTranslatedText.current = trimmed;
 
-      const newItem: TranslationHistoryItem = {
-        id: Date.now().toString(),
+      rememberTranslation({
         sourceText: trimmed,
         translatedText: result.translation,
         sourceLang,
         targetLang,
-        timestamp: Date.now(),
         mode: 'online',
+        domain: selectedDomain,
+        tone: selectedTone,
+        dialect: selectedDialect,
         detectedLang: sourceLang === 'auto' ? activeFrom : undefined,
-      };
-      setHistory(prev => [newItem, ...prev.filter(i => i.sourceText !== trimmed)].slice(0, 50));
+      });
+
+      if (appSettings.autoCopyOnTranslate) {
+        try { await navigator.clipboard.writeText(result.translation); } catch {}
+      }
+      if (appSettings.autoSpeakTarget) {
+        speakText(result.translation, targetLang, ttsSettings);
+      }
     } catch (err: any) {
+      if (isStale()) return;
       console.warn('Online translation temporary issue, switching to local offline engine:', err?.message || err);
       // Fallback to offline engine seamlessly!
       try {
@@ -554,35 +682,62 @@ export const App: React.FC = () => {
           domain: selectedDomain,
           dialect: selectedDialect
         });
+        if (isStale()) return;
         setResultText(offlineFallback.translation);
         setTransliteration(offlineFallback.transliteration || '');
         setDetectedLangBanner(offlineFallback.detectedLanguageName || '');
         setMoreTranslations(offlineFallback.moreTranslations || []);
         setDefinitions(offlineFallback.definitions || []);
-        translationCache.current.set(cacheKey, offlineFallback.translation);
+        cachePut(cacheKey, offlineFallback.translation);
         setTranslationEngine('offline');
         setError(null); // Clear error because translation succeeded via offline engine
         lastTranslatedText.current = trimmed;
         showToast('تمت الترجمة بالمحرك المحلي الفوري ⚡');
 
-        const newItem: TranslationHistoryItem = {
-          id: Date.now().toString(),
+        rememberTranslation({
           sourceText: trimmed,
           translatedText: offlineFallback.translation,
           sourceLang,
           targetLang,
-          timestamp: Date.now(),
           mode: 'offline',
+          domain: selectedDomain,
+          tone: selectedTone,
+          dialect: selectedDialect,
           detectedLang: sourceLang === 'auto' ? activeFrom : undefined,
-        };
-        setHistory(prev => [newItem, ...prev.filter(i => i.sourceText !== trimmed)].slice(0, 50));
+        });
       } catch (offlineErr: any) {
-        setError('تعذر إتمام الترجمة عبر السيرفر أو المحرك المحلي.');
+        if (!isStale()) setError('تعذر إتمام الترجمة عبر السيرفر أو المحرك المحلي.');
       }
     } finally {
-      setIsLoading(false);
+      if (!isStale()) setIsLoading(false);
     }
-  }, [sourceLang, targetLang, forceOffline, selectedDomain, selectedTone, selectedDialect]);
+  }, [
+    sourceLang,
+    targetLang,
+    forceOffline,
+    selectedDomain,
+    selectedTone,
+    selectedDialect,
+    cachePut,
+    rememberTranslation,
+    showToast,
+    ttsSettings,
+    appSettings.accuracyLevel,
+    appSettings.defaultEngine,
+    appSettings.preserveFormatting,
+    appSettings.translateNumbers,
+    appSettings.autoCopyOnTranslate,
+    appSettings.autoSpeakTarget,
+  ]);
+
+  // Late-bind the keyboard-shortcut actions to the freshest closures.
+  translateNowRef.current = () => {
+    if (!inputText.trim()) return;
+    lastTranslatedText.current = '';
+    void handleTranslate(inputText);
+  };
+
+  toggleListeningRef.current = toggleListening;
 
   // Deep AI Analysis Handler (Alternatives, Cultural Context, Grammar)
   const handleRunDeepAnalysis = async () => {
@@ -645,20 +800,40 @@ export const App: React.FC = () => {
     }
     if (trimmed === '[Image Translated]') return;
 
-    // Instant cache retrieval on typing
+    // Instant cache retrieval on typing (0 ms for anything seen before)
     const cacheKey = `${trimmed}__${sourceLang}__${targetLang}__${selectedDomain}__${selectedTone}__${selectedDialect}`;
     if (translationCache.current.has(cacheKey)) {
       setResultText(translationCache.current.get(cacheKey)!);
       lastTranslatedText.current = trimmed;
+      setIsLoading(false);
       return;
     }
 
-    const delayMs = forceOffline || !navigator.onLine ? 160 : 280;
+    // "Instant translate while typing" off → the user translates manually.
+    if (!appSettings.instantTranslateWhileTyping) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Adaptive debounce: shorter for the local engine, user-tunable for online.
+    const configured = Math.max(0, appSettings.translateDelayMs ?? 280);
+    const delayMs = forceOffline || !navigator.onLine ? Math.min(160, configured) : configured;
     const timer = setTimeout(() => {
       handleTranslate(inputText);
     }, delayMs);
     return () => clearTimeout(timer);
-  }, [inputText, handleTranslate, sourceLang, targetLang, selectedDomain, selectedTone, selectedDialect, forceOffline]);
+  }, [
+    inputText,
+    handleTranslate,
+    sourceLang,
+    targetLang,
+    selectedDomain,
+    selectedTone,
+    selectedDialect,
+    forceOffline,
+    appSettings.instantTranslateWhileTyping,
+    appSettings.translateDelayMs,
+  ]);
 
   // Favorites & Starred translations
   const favorites = history.filter(item => item.isFavorite);
@@ -726,12 +901,15 @@ export const App: React.FC = () => {
     const actualSource = sourceLang === 'auto' ? (detectedLangCode || 'en') : sourceLang;
     setSourceLang(targetLang);
     setTargetLang(actualSource);
+    lastTranslatedText.current = '';
 
     const prevInput = inputText;
     setInputText(resultText);
     setResultText(prevInput);
     lastTranslatedText.current = '';
   };
+
+  swapLanguagesRef.current = swapLanguages;
 
   // Restore Last Translation
   const restoreLastTranslation = () => {
@@ -826,15 +1004,25 @@ export const App: React.FC = () => {
       lastTranslatedText.current = '';
       return;
     }
-    // Instant 0ms response from rich offline dictionary
-    const instant = translateOffline(newText.trim(), sourceLang, targetLang);
-    if (instant && instant.confidence === 'exact') {
+    // Instant 0ms preview from the local dictionary.
+    //
+    // IMPORTANT: this is only a *preview*. Marking it as the last translated
+    // text used to cancel the debounced AI request, so anything the local
+    // dictionary knew ("hello", "thank you") never reached the neural engine.
+    // We now only claim the text when we are genuinely offline.
+    const offlineNow = forceOffline || !navigator.onLine;
+    const instant = translateOffline(newText.trim(), sourceLang, targetLang, {
+      domain: selectedDomain,
+      dialect: selectedDialect,
+      tone: selectedTone,
+    });
+    if (instant && instant.confidence !== 'fallback' && instant.translation) {
       setResultText(instant.translation);
       setTransliteration(instant.transliteration || '');
       setDetectedLangBanner(instant.detectedLanguageName || '');
       setMoreTranslations(instant.moreTranslations || []);
       setDefinitions(instant.definitions || []);
-      lastTranslatedText.current = newText.trim();
+      if (offlineNow) lastTranslatedText.current = newText.trim();
     }
   };
 
@@ -848,20 +1036,98 @@ export const App: React.FC = () => {
     lastTranslatedText.current = '';
   };
 
+  /* ------------------------- Cloud (Firestore) sync ----------------------- */
+
+  const toCloud = (item: TranslationHistoryItem): CloudHistoryItem => ({
+    id: item.id,
+    sourceText: item.sourceText,
+    translatedText: item.translatedText,
+    sourceLang: item.sourceLang,
+    targetLang: item.targetLang,
+    domain: item.domain,
+    dialect: item.dialect,
+    tone: item.tone,
+    favorites: Boolean(item.isFavorite),
+    timestamp: new Date(item.timestamp).toISOString(),
+  });
+
+  const fromCloud = (item: CloudHistoryItem): TranslationHistoryItem => ({
+    id: item.id,
+    sourceText: item.sourceText,
+    translatedText: item.translatedText,
+    sourceLang: item.sourceLang,
+    targetLang: item.targetLang,
+    domain: item.domain as any,
+    dialect: item.dialect as any,
+    tone: item.tone as any,
+    isFavorite: Boolean(item.favorites),
+    timestamp: new Date(item.timestamp).getTime() || Date.now(),
+  });
+
+  const isCloudSignedIn = Boolean(googleUser) && Boolean(getSignedInUser());
+
+  // Two-way merge with Firestore right after a cloud login.
+  const performCloudSync = useCallback(async (silent = false) => {
+    if (!isCloudSignedIn) return;
+    try {
+      const { merged } = await syncHistory(history.map(toCloud));
+      const mergedLocal = merged.map(fromCloud);
+      setHistory(mergedLocal);
+      if (!silent) showToast(`تمت المزامنة السحابية (${mergedLocal.length} عنصر) ✓`);
+    } catch (e) {
+      if (!silent) showToast('تعذرت المزامنة السحابية — سيُعاد لاحقاً');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCloudSignedIn, history, showToast]);
+
+  // Debounced background push so every new translation backs up to the account.
+  useEffect(() => {
+    if (!isCloudSignedIn) return;
+    const t = window.setTimeout(() => {
+      syncHistory(history.map(toCloud)).catch(() => {});
+    }, 1500);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [history, isCloudSignedIn]);
+
+  const handleGoogleLogin = (user: GoogleUser) => {
+    setGoogleUser(user);
+    try {
+      localStorage.setItem('mahdi_google_user', JSON.stringify(user));
+    } catch {}
+    showToast(`مرحباً ${user.name} 👋`);
+    // If this is a real cloud account, pull + merge the user's history.
+    if (getSignedInUser()) performCloudSync(true);
+  };
+
+  const handleGoogleLogout = async () => {
+    setGoogleUser(null);
+    try {
+      localStorage.removeItem('mahdi_google_user');
+    } catch {}
+    await cloudSignOut().catch(() => {});
+    showToast('تم تسجيل الخروج');
+  };
+
   const hasActiveText = Boolean(inputText.trim() || resultText);
 
   return (
-    <div 
-      className={`min-h-screen transition-colors duration-300 ${currentTheme.bg} ${currentTheme.text} flex flex-col selection:bg-amber-500/30 selection:text-amber-200`}
+    <div
+      className="mt-app flex flex-col"
       dir="rtl"
       style={{
         fontSize: `${zoom}%`,
       }}
     >
+      {/* Ambient themed glow (respects the appearance toggles) */}
+      <div className="mt-glow-orbs" aria-hidden="true">
+        <span /><span /><span />
+      </div>
+
       {/* Toast Notification Banner */}
       {toastMessage && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[115] px-5 py-2 rounded-full bg-zinc-950/90 text-amber-300 border border-amber-500/40 shadow-2xl backdrop-blur-md text-xs font-bold animate-in fade-in slide-in-from-top-4 flex items-center gap-2">
-          <Sparkles size={14} className="text-amber-400" />
+        <div className="mt-toast mt-fade-in fixed top-5 left-1/2 -translate-x-1/2 z-[115] px-5 py-2 text-xs font-bold flex items-center gap-2" role="status" aria-live="polite">
+          <Sparkles size={14} className="mt-accent-text" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -871,31 +1137,31 @@ export const App: React.FC = () => {
         className="w-full flex-1 flex flex-col p-3 sm:p-5 md:p-6 max-w-5xl mx-auto transition-transform duration-200 origin-top"
       >
         {/* Unified Responsive Header */}
-        <header className="w-full flex items-center justify-between gap-2 mb-3 pb-2 border-b border-inherit/30">
+        <header className="mt-surface-soft w-full flex items-center justify-between gap-2 mb-3 px-3 py-2 border" style={{ borderColor: 'var(--mt-border)', borderRadius: 'var(--mt-radius)' }}>
           {/* Right side (in RTL): Google Account Button & Settings */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={() => setIsGoogleAuthOpen(true)}
-              className="h-8 sm:h-9 px-2 sm:px-2.5 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/15 dark:hover:bg-white/20 border border-inherit flex items-center gap-1.5 transition-all active:scale-95 shadow-sm group"
+              className="mt-btn h-8 sm:h-9 px-2 sm:px-2.5 rounded-full text-[11px] group"
               title={googleUser ? `حساب Google: ${googleUser.email}` : "تسجيل الدخول بحساب Google"}
             >
               {googleUser ? (
                 <div className="flex items-center gap-1.5">
                   {googleUser.photoUrl ? (
-                    <img src={googleUser.photoUrl} alt={googleUser.name} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-emerald-400" />
+                    <img src={googleUser.photoUrl} alt={googleUser.name} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border" style={{ borderColor: 'var(--mt-accent)' }} />
                   ) : (
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-bold text-[10px] flex items-center justify-center border border-emerald-400">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full font-bold text-[10px] flex items-center justify-center" style={{ background: 'var(--mt-primary-gradient)', color: 'var(--mt-on-primary)' }}>
                       {googleUser.name.charAt(0)}
                     </div>
                   )}
                   <span className="text-[11px] font-bold max-w-[70px] sm:max-w-[100px] truncate hidden sm:inline">
                     {googleUser.name}
                   </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--mt-success)' }} />
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-blue-500 to-amber-500 text-white font-bold flex items-center justify-center text-[10px] shadow-inner">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full font-bold flex items-center justify-center text-[10px]" style={{ background: 'var(--mt-primary-gradient)', color: 'var(--mt-on-primary)' }}>
                     <User size={13} />
                   </div>
                   <span className="text-[11px] font-bold hidden sm:inline opacity-80">تسجيل الدخول</span>
@@ -904,8 +1170,20 @@ export const App: React.FC = () => {
             </button>
 
             <button
+              onClick={() => setIsThemeGalleryOpen(true)}
+              className="mt-icon-btn p-2"
+              title={`مكتبة الثيمات (${themeTotal}+ ثيم)`}
+              aria-label="مكتبة الثيمات"
+            >
+              <Palette size={17} />
+            </button>
+
+            {/* Install / APK shortcut — hides itself when running as an installed app */}
+            <InstallAppButton onShowToast={showToast} className="!h-8 !px-2 sm:!px-2.5 rounded-full text-[11px]" />
+
+            <button
               onClick={() => setIsProSettingsOpen(true)}
-              className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-all"
+              className="mt-icon-btn p-2"
               title="الإعدادات الاحترافية الشاملة"
             >
               <SlidersHorizontal size={17} />
@@ -913,14 +1191,10 @@ export const App: React.FC = () => {
           </div>
 
           {/* Center: Mode Switcher (الوضع المتقدم شاشتان vs الوضع الكلاسيكي) */}
-          <div className="flex items-center p-0.5 rounded-full bg-black/10 dark:bg-white/10 border border-inherit/30 text-xs shadow-inner">
+          <div className="mt-surface-soft flex items-center p-0.5 rounded-full text-xs" style={{ border: '1px solid var(--mt-border)' }}>
             <button
               onClick={() => handleSetViewMode('classic')}
-              className={`px-2.5 py-1 rounded-full font-bold transition-all text-[11px] flex items-center gap-1 ${
-                viewMode === 'classic'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-inherit opacity-65 hover:opacity-100'
-              }`}
+              className={`mt-btn px-2.5 py-1 rounded-full text-[11px] ${viewMode === 'classic' ? 'mt-btn-primary' : 'mt-btn-ghost'}`}
               title="الوضع الكلاسيكي"
             >
               <Globe2 size={12} />
@@ -929,11 +1203,7 @@ export const App: React.FC = () => {
             </button>
             <button
               onClick={() => handleSetViewMode('advanced')}
-              className={`px-2.5 py-1 rounded-full font-bold transition-all text-[11px] flex items-center gap-1 ${
-                viewMode === 'advanced'
-                  ? 'bg-amber-500 text-zinc-950 shadow-sm'
-                  : 'text-inherit opacity-65 hover:opacity-100'
-              }`}
+              className={`mt-btn px-2.5 py-1 rounded-full text-[11px] ${viewMode === 'advanced' ? 'mt-btn-primary' : 'mt-btn-ghost'}`}
               title="الوضع المتقدم (شاشتان)"
             >
               <Sliders size={12} />
@@ -946,7 +1216,7 @@ export const App: React.FC = () => {
           <div className="flex items-center gap-1 sm:gap-1.5">
             <button
               onClick={() => setIsHandwritingModalOpen(true)}
-              className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-colors"
+              className="mt-icon-btn p-1.5 sm:p-2"
               title="الكتابة باليد والرسم"
             >
               <Pen size={16} />
@@ -954,12 +1224,12 @@ export const App: React.FC = () => {
 
             <button
               onClick={() => setIsStarredModalOpen(true)}
-              className="relative p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-colors"
+              className="mt-icon-btn relative p-1.5 sm:p-2"
               title="المفضلة والمحفوظات"
             >
-              <Star size={17} className={favorites.length > 0 ? "text-amber-400 fill-amber-400" : "opacity-70"} />
+              <Star size={17} className={favorites.length > 0 ? "fill-[var(--mt-accent)] mt-accent-text" : "opacity-70"} />
               {favorites.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500 text-zinc-950 font-black text-[9px] flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full font-black text-[9px] flex items-center justify-center" style={{ background: 'var(--mt-primary)', color: 'var(--mt-on-primary)' }}>
                   {favorites.length}
                 </span>
               )}
@@ -967,7 +1237,8 @@ export const App: React.FC = () => {
 
             <button
               onClick={() => setShowHistory(prev => !prev)}
-              className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-inherit transition-colors"
+              className="mt-icon-btn p-1.5 sm:p-2"
+              data-active={showHistory}
               title="سجل الترجمة"
             >
               <History size={17} />
@@ -1017,8 +1288,12 @@ export const App: React.FC = () => {
               onToggleFavorite={toggleFavorite}
               onOpenZoom={() => setIsZoomModalOpen(true)}
               onShare={() => shareTranslation(inputText, resultText)}
-              onOpenAIAnalysis={() => setIsAIAnalysisOpen(true)}
-              onOpenCompareEngines={() => setIsCompareModalOpen(true)}
+              onOpenAIAnalysis={() => {
+                handleRunDeepAnalysis();
+              }}
+              onOpenCompareEngines={() => {
+                handleRunComparison();
+              }}
               onChangeDomain={(d) => {
                 setSelectedDomain(d);
                 lastTranslatedText.current = '';
@@ -1076,6 +1351,11 @@ export const App: React.FC = () => {
               }}
               onOpenZoom={() => setIsZoomModalOpen(true)}
               onShowToast={showToast}
+              onPaste={handlePaste}
+              onCommitTranslation={(text) => {
+                setResultText(text);
+                cachePut(`${inputText.trim()}__${sourceLang}__${targetLang}__${selectedDomain}__${selectedTone}__${selectedDialect}`, text);
+              }}
               theme={currentTheme}
             />
           )}
@@ -1086,25 +1366,25 @@ export const App: React.FC = () => {
             className="w-full flex flex-col items-center justify-center py-2 cursor-pointer group select-none transition-all my-1"
             title="انقر لفتح سجل الترجمات السابقة"
           >
-            <div className="w-10 h-1.5 rounded-full bg-inherit/40 group-hover:bg-amber-500 transition-colors mb-1" />
-            <span className="text-[11px] opacity-60 group-hover:opacity-100 group-hover:text-amber-400 transition-all font-medium">
+            <div className="w-10 h-1.5 rounded-full transition-colors mb-1" style={{ background: 'var(--mt-border-strong)' }} />
+            <span className="text-[11px] opacity-60 group-hover:opacity-100 transition-all font-medium">
               {showHistory ? 'إخفاء السجلّ' : 'يمكنك النقر أو التمرير سريعاً للأسفل لإظهار السجلّ.'}
             </span>
           </div>
 
           {/* Translation History Drawer / Card */}
           {showHistory && (
-            <div className={`${currentTheme.card} rounded-3xl p-4 sm:p-5 border ${currentTheme.border} shadow-xl animate-in slide-in-from-bottom-3 duration-200`}>
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-inherit">
+            <div className="mt-glass mt-slide-up p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b" style={{ borderColor: 'var(--mt-border)' }}>
                 <div className="flex items-center gap-2">
-                  <History size={17} className="text-amber-500" />
+                  <History size={17} className="mt-accent-text" />
                   <h3 className="font-bold text-sm">سجل الترجمات المحفوظة محلياً</h3>
                 </div>
                 <div className="flex items-center gap-2">
                   {history.length > 0 && (
                     <button
                       onClick={clearHistory}
-                      className="text-xs text-red-500 hover:text-red-400 font-bold flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity"
+                      className="mt-btn mt-btn-danger px-2 py-1 text-xs"
                     >
                       <Trash2 size={13} />
                       <span>مسح السجل</span>
@@ -1112,7 +1392,7 @@ export const App: React.FC = () => {
                   )}
                   <button
                     onClick={() => setShowHistory(false)}
-                    className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                    className="p-1 rounded-lg mt-subtext hover:text-[var(--mt-text)] hover:bg-[var(--mt-surface)] transition-colors"
                     title="إغلاق السجل"
                   >
                     <X size={15} />
@@ -1129,7 +1409,7 @@ export const App: React.FC = () => {
                   {history.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-inherit hover:border-amber-500/40 transition-all flex items-start justify-between gap-3 group"
+                      className="mt-surface-soft p-3 flex items-start justify-between gap-3 group" style={{ border: '1px solid var(--mt-border)' }}
                     >
                       <div 
                         className="flex-1 cursor-pointer"
@@ -1142,7 +1422,7 @@ export const App: React.FC = () => {
                         }}
                       >
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                          <span className="mt-badge font-mono">
                             {item.sourceLang} → {item.targetLang}
                           </span>
                           <span className="text-[10px] opacity-40">
@@ -1150,30 +1430,30 @@ export const App: React.FC = () => {
                           </span>
                         </div>
                         <div className="text-xs font-semibold truncate">{item.sourceText}</div>
-                        <div className="text-xs opacity-75 text-amber-400/90 truncate">{item.translatedText}</div>
+                        <div className="text-xs opacity-80 truncate mt-accent-text">{item.translatedText}</div>
                       </div>
 
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleSpeak(item.translatedText, item.targetLang)}
-                          className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
+                          className="mt-icon-btn p-1.5"
                           title="استماع"
                         >
                           <Volume2 size={13} />
                         </button>
                         <button
                           onClick={() => copyToClipboard(item.translatedText)}
-                          className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
+                          className="mt-icon-btn p-1.5"
                           title="نسخ"
                         >
                           <Copy size={13} />
                         </button>
                         <button
                           onClick={() => toggleFavorite(item.id)}
-                          className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
+                          className="mt-icon-btn p-1.5"
                           title={item.isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
                         >
-                          <Star size={13} className={item.isFavorite ? "text-amber-400 fill-amber-400" : "text-zinc-400"} />
+                          <Star size={13} className={item.isFavorite ? "fill-[var(--mt-accent)] mt-accent-text" : ""} />
                         </button>
                       </div>
                     </div>
@@ -1187,7 +1467,7 @@ export const App: React.FC = () => {
           <div className="mt-auto pt-4 pb-2 flex flex-col items-center gap-3 w-full">
             
             {/* Floating Language Pill Selector */}
-            <div className="w-full max-w-lg bg-zinc-900/95 dark:bg-zinc-800/95 backdrop-blur-xl border border-white/10 text-white rounded-full px-2 py-1.5 shadow-2xl flex items-center justify-between">
+            <div className="mt-glass w-full max-w-lg rounded-full px-2 py-1.5 flex items-center justify-between">
               <div className="flex-1 flex items-center justify-center">
                 <LanguageSelectDropdown
                   label="من"
@@ -1213,7 +1493,7 @@ export const App: React.FC = () => {
               {/* Swap Button */}
               <button
                 onClick={swapLanguages}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:rotate-180 transition-all shadow-inner mx-1 shrink-0"
+                className="mt-icon-btn w-8 h-8 mx-1 shrink-0 active:rotate-180"
                 title="تبديل اللغات"
               >
                 <ArrowRightLeft size={15} />
@@ -1242,7 +1522,7 @@ export const App: React.FC = () => {
               <div className="flex flex-col items-center gap-1.5">
                 <button
                   onClick={() => setIsImageModalOpen(true)}
-                  className="w-14 h-14 rounded-full bg-zinc-900/90 dark:bg-zinc-800/90 text-blue-400 hover:bg-blue-500 hover:text-white border border-white/10 shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                  className="mt-glass mt-icon-btn w-14 h-14 hover:scale-105 active:scale-95"
                   title="ترجمة الصور والكاميرا"
                 >
                   <Camera size={24} />
@@ -1254,12 +1534,16 @@ export const App: React.FC = () => {
               <div className="flex flex-col items-center gap-1.5">
                 <button
                   onClick={toggleListening}
-                  className={`w-18 h-18 rounded-full flex items-center justify-center transition-all shadow-2xl hover:scale-105 active:scale-95 border ${
-                    isListening
-                      ? 'bg-red-500 text-white border-red-400 animate-pulse ring-8 ring-red-500/30 shadow-red-500/50'
-                      : 'bg-zinc-800/90 dark:bg-zinc-700/90 text-amber-400 hover:bg-amber-500 hover:text-zinc-950 border-white/10'
+                  className={`mt-icon-btn rounded-full hover:scale-105 active:scale-95 border ${
+                    isListening ? 'mt-listening' : 'mt-glass'
                   }`}
-                  style={{ width: '4.5rem', height: '4.5rem' }}
+                  style={{
+                    width: '4.5rem',
+                    height: '4.5rem',
+                    background: isListening ? 'var(--mt-danger)' : undefined,
+                    color: isListening ? '#fff' : 'var(--mt-accent)',
+                    borderColor: isListening ? 'var(--mt-danger)' : undefined,
+                  }}
                   title={isListening ? 'جاري الاستماع... انقر للإيقاف' : 'التحدث بالصوت'}
                 >
                   {isListening ? <MicOff size={30} /> : <Mic size={30} />}
@@ -1273,7 +1557,7 @@ export const App: React.FC = () => {
               <div className="flex flex-col items-center gap-1.5">
                 <button
                   onClick={() => setIsDualConversationModalOpen(true)}
-                  className="w-14 h-14 rounded-full bg-zinc-900/90 dark:bg-zinc-800/90 text-blue-400 hover:bg-blue-500 hover:text-white border border-white/10 shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                  className="mt-glass mt-icon-btn w-14 h-14 hover:scale-105 active:scale-95"
                   title="الترجمة المباشرة والمحادثة الثنائية"
                 >
                   <Users size={24} />
@@ -1463,6 +1747,49 @@ export const App: React.FC = () => {
           setInputText(prev => prev ? `${prev} ${text}` : text);
           showToast('تم إدراج النص المكتوب بخط اليد');
         }}
+      />
+
+      {/* MODAL 11: Theme Gallery — 1500+ themes applied to the whole app */}
+      {isThemeGalleryOpen && (
+        <div className="mt-modal-backdrop" onClick={() => setIsThemeGalleryOpen(false)} role="dialog" aria-modal="true" aria-label="مكتبة الثيمات">
+          <div className="mt-modal max-w-6xl" dir="rtl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: 'var(--mt-border)' }}>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl" style={{ background: 'var(--mt-primary-gradient)', color: 'var(--mt-on-primary)' }}>
+                  <Palette size={20} />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-extrabold mt-heading">مكتبة الثيمات الاحترافية</h2>
+                  <p className="text-[11px] mt-subtext">
+                    {themeTotal} ثيم بألوان وأشكال متميزة — يُطبَّق فوراً على كل التطبيق
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setIsThemeGalleryOpen(false)} className="mt-icon-btn p-2" title="إغلاق" aria-label="إغلاق">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto mt-scroll p-4 sm:p-5">
+              <ThemeGallery
+                variant="full"
+                maxHeightClass="max-h-[42vh]"
+                onApplied={(t) => showToast(`تم تطبيق ثيم: ${t.nameAr} ✓`)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Google account + cloud sync modal (real Firebase when configured) */}
+      <GoogleAuthModal
+        isOpen={isGoogleAuthOpen}
+        onClose={() => setIsGoogleAuthOpen(false)}
+        currentUser={googleUser}
+        onLogin={handleGoogleLogin}
+        onLogout={handleGoogleLogout}
+        starredCount={favorites.length}
+        historyCount={history.length}
       />
     </div>
   );

@@ -32,6 +32,51 @@ function getGenAI(): GoogleGenAI {
   return aiClient;
 }
 
+/* ------------------------------------------------------------------ *
+ * Keyless free online engines (MyMemory → LibreTranslate mirrors).
+ * These let "online" translation work even with no GEMINI_API_KEY, so a
+ * fresh install still translates over the internet. Runs server-side.
+ * ------------------------------------------------------------------ */
+const LIBRE_MIRRORS = [
+  'https://libretranslate.de/translate',
+  'https://translate.terraprint.co/translate',
+  'https://lt.vern.cc/translate',
+];
+
+async function freeTranslate(text: string, from: string, to: string): Promise<string | null> {
+  const src = !from || from === 'auto' ? 'en' : from;
+  const tgt = to || 'ar';
+
+  // 1) MyMemory — keyless, generous, reliable.
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(`${src}|${tgt}`)}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    if (res.ok) {
+      const data: any = await res.json();
+      const t = data?.responseData?.translatedText;
+      if (typeof t === 'string' && t && !/INVALID|NO QUERY|PLEASE SELECT/i.test(t)) return t;
+    }
+  } catch {}
+
+  // 2) LibreTranslate public mirrors.
+  for (const mirror of LIBRE_MIRRORS) {
+    try {
+      const res = await fetch(mirror, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: text, source: src, target: tgt, format: 'text' }),
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.ok) {
+        const data: any = await res.json();
+        if (typeof data?.translatedText === 'string' && data.translatedText) return data.translatedText;
+      }
+    } catch {}
+  }
+
+  return null;
+}
+
 // Resilient model fallback list for text tasks (from SKILL.md)
 const TEXT_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
 
@@ -87,15 +132,46 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     hasKey: Boolean(process.env.GEMINI_API_KEY),
+    firebase: Boolean(process.env.VITE_FIREBASE_API_KEY && process.env.VITE_FIREBASE_PROJECT_ID),
+  });
+});
+
+/**
+ * Public Firebase web config for cloud sync (history backup tied to the user's
+ * account). These values are safe to expose — Firestore security rules are what
+ * actually protect the data. Never put a service-account key here.
+ */
+app.get('/api/config', (_req, res) => {
+  const apiKey = process.env.VITE_FIREBASE_API_KEY;
+  const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
+  const appId = process.env.VITE_FIREBASE_APP_ID;
+
+  if (!apiKey || !projectId || !appId) {
+    res.json({ firebase: null, message: 'Firebase غير مُعد — المزامنة السحابية معطلة' });
+    return;
+  }
+
+  res.json({
+    firebase: {
+      apiKey,
+      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
+      projectId,
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`,
+      messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+      appId,
+    },
   });
 });
 
 // Translation Endpoint with multi-model fallback, domain, tone, dialect and analysis support
 app.post('/api/translate', async (req, res) => {
   try {
-    const { text, from, to, domain, tone, dialect, includeAnalysis } = req.body;
+    const { text, from, to, domain, tone, dialect, includeAnalysis, accuracy, engine, preserveFormatting, translateNumbers } = req.body;
     if (!text || typeof text !== 'string') {
       return res.status(400).json({ error: 'Text is required for translation.' });
+    }
+    if (typeof text === 'string' && text.length > 24000) {
+      return res.status(413).json({ error: 'النص طويل جداً (الحد الأقصى 24000 حرف).' });
     }
 
     const ai = getGenAI();
@@ -106,12 +182,37 @@ app.post('/api/translate', async (req, res) => {
     const toneContext = tone && tone !== 'standard' ? `Tone: ${tone}` : '';
     const dialectContext = dialect && dialect !== 'standard' ? `Dialect target: ${dialect}` : '';
 
+    // Precision rules driven by the user's settings panel.
+    const accuracyContext =
+      accuracy === 'fast'
+        ? 'Accuracy mode: FAST — prefer the single most likely rendering, keep it brief.'
+        : accuracy === 'balanced'
+        ? 'Accuracy mode: BALANCED — natural fluency first, literal fidelity second.'
+        : 'Accuracy mode: ULTRA-ACCURATE — verify terminology, idioms, negations, numbers and named entities before answering. Never drop or invent meaning.';
+    const engineContext =
+      engine === 'deepl-style'
+        ? 'Engine style: DeepL-style — document-level fluency and idiomatic phrasing.'
+        : engine === 'offline-local'
+        ? 'Engine style: conservative literal translation.'
+        : 'Engine style: Mahdi Neural — highest quality neural rendering.';
+    const formatRules = [
+      preserveFormatting === false ? 'Flatten line breaks into flowing prose.' : 'Preserve the original line breaks, lists, and paragraph structure exactly.',
+      translateNumbers === false ? 'Keep digits, dates, currencies and measurements in their original form.' : 'Localise digits, dates, currencies and units to the target-language convention.',
+      'Never translate code identifiers, URLs, file paths, or placeholders such as {name} and %s.',
+      'Output ONLY the requested JSON — no markdown fences, no commentary.',
+    ].join('\n');
+
     if (includeAnalysis) {
       const prompt = `You are Mahdi (مهدي), the world's most advanced multilingual neural translator and linguistic expert.
 Translate the text from ${sourceLangPrompt} to ${targetLang}.
 ${domainContext ? `${domainContext}` : ''}
 ${toneContext ? `${toneContext}` : ''}
 ${dialectContext ? `${dialectContext}` : ''}
+${accuracyContext}
+${engineContext}
+
+Formatting & precision rules:
+${formatRules}
 
 CRITICAL: Return a VALID JSON object (and nothing else) with this exact schema:
 {
@@ -158,6 +259,11 @@ Translate the text from ${sourceLangPrompt} to ${targetLang}.
 ${domainContext ? `${domainContext}` : ''}
 ${toneContext ? `${toneContext}` : ''}
 ${dialectContext ? `${dialectContext}` : ''}
+${accuracyContext}
+${engineContext}
+
+Formatting & precision rules:
+${formatRules}
 
 You MUST return a VALID JSON object (and nothing else) with this exact schema:
 {
@@ -218,8 +324,26 @@ Text to translate:
     }
   } catch (error: any) {
     const isBusy = error?.status === 503 || String(error?.message || '').includes('high demand') || String(error?.message || '').includes('UNAVAILABLE');
+    const isMissingKey = String(error?.message || '').includes('GEMINI_API_KEY');
     console.warn('Translation request handled with status:', isBusy ? '503 (High Demand)' : (error?.message || 'Error'));
-    
+
+    // Online fallback with no Gemini key (or when Gemini is down): try the free
+    // keyless engines so the user still gets a real online translation.
+    if (isMissingKey || isBusy || error?.status === 403) {
+      const body = (req.body || {}) as { text?: string; from?: string; to?: string };
+      const free = await freeTranslate(body.text || '', body.from || 'auto', body.to || 'ar').catch(() => null);
+      if (free) {
+        return res.json({
+          translation: free,
+          transliteration: '',
+          detectedLanguageName: '',
+          moreTranslations: [],
+          definitions: [],
+          engine: 'free-online',
+        });
+      }
+    }
+
     const status = isBusy ? 503 : (error?.status || (error?.message?.includes('PERMISSION_DENIED') ? 403 : 500));
     return res.status(status).json({
       error: isBusy 

@@ -28,6 +28,8 @@ export interface DictionaryEntry {
   it?: string;
   zh?: string;
   ja?: string;
+  /** Optional dialect-specific renderings of the target value (e.g. ar-iq, ar-eg). */
+  dialects?: Record<string, string>;
 }
 
 export const OFFLINE_DICTIONARY: DictionaryEntry[] = [
@@ -110,38 +112,20 @@ export const OFFLINE_DICTIONARY: DictionaryEntry[] = [
   { en: 'hundred', ar: 'مئة', fr: 'cent', es: 'cien', de: 'hundert', tr: 'yüz', ru: 'сто', it: 'cento', zh: '百', ja: '百' },
   { en: 'thousand', ar: 'ألف', fr: 'mille', es: 'mil', de: 'tausend', tr: 'bin', ru: 'тысяча', it: 'mille', zh: '千', ja: '千' },
 
-  // Dialect dictionary & Slang expressions
-  { en: 'how are you', ar: 'شلونك', fr: 'comment ça va' }, // عراقي / خليجي
-  { en: 'how are you', ar: 'ازيك', fr: 'comment vas-tu' }, // مصري
-  { en: 'how are you', ar: 'كيفك', fr: 'comment vas-tu' }, // شامي
-  { en: 'how are you', ar: 'كيداير', fr: 'comment vas-tu' }, // مغربي
-  { en: 'what do you want', ar: 'شنو تريد', fr: 'que veux-tu' }, // عراقي
-  { en: 'what do you want', ar: 'عايز ايه', fr: 'que veux-tu' }, // مصري
-  { en: 'what do you want', ar: 'شو بدك', fr: 'que veux-tu' }, // شامي
-  { en: 'what do you want', ar: 'وش تبي', fr: 'que veux-tu' }, // خليجي
-  { en: 'i want', ar: 'أريد', fr: 'je veux' },
-  { en: 'i want', ar: 'عايز', fr: 'je veux' },
-  { en: 'i want', ar: 'بدي', fr: 'je veux' },
-  { en: 'i want', ar: 'بغيت', fr: 'je veux' },
-  { en: 'very much', ar: 'وايد', fr: 'beaucoup' },
-  { en: 'very much', ar: 'حيل', fr: 'beaucoup' },
-  { en: 'very much', ar: 'أوي', fr: 'beaucoup' },
-  { en: 'very much', ar: 'كتير', fr: 'beaucoup' },
-  { en: 'very much', ar: 'بزاف', fr: 'beaucoup' },
-  { en: 'now', ar: 'هسة', fr: 'maintenant' },
-  { en: 'now', ar: 'دلوقتي', fr: 'maintenant' },
-  { en: 'now', ar: 'الحين', fr: 'maintenant' },
-  { en: 'now', ar: 'دابا', fr: 'maintenant' },
-  { en: 'good', ar: 'زين', fr: 'bon' },
-  { en: 'good', ar: 'كويس', fr: 'bon' },
-  { en: 'good', ar: 'منيح', fr: 'bon' },
-  { en: 'good', ar: 'زوين', fr: 'bon' },
-  { en: 'what is this', ar: 'شنو هذا', fr: 'qu\'est-ce que c\'est' },
-  { en: 'what is this', ar: 'ايه ده', fr: 'qu\'est-ce que c\'est' },
-  { en: 'what is this', ar: 'شو هادا', fr: 'qu\'est-ce que c\'est' },
-  { en: 'there is nothing', ar: 'ماكو شي', fr: 'il n\'y a rien' },
-  { en: 'there is nothing', ar: 'مفيش حاجة', fr: 'il n\'y a rien' },
-  { en: 'there is nothing', ar: 'ما في شي', fr: 'il n\'y a rien' },
+  // Dialect dictionary & slang — one entry per meaning, dialect variants kept
+  // separate so standard Arabic never leaks a dialect word by accident.
+  { en: 'how are you', ar: 'كيف حالك', fr: 'comment ça va', dialects: { 'ar-iq': 'شلونك', 'ar-gulf': 'شلونك', 'ar-eg': 'ازيك', 'ar-sy': 'كيفك', 'ar-ma': 'كيداير' } },
+  { en: 'what do you want', ar: 'ماذا تريد', fr: 'que veux-tu', dialects: { 'ar-iq': 'شنو تريد', 'ar-eg': 'عايز ايه', 'ar-sy': 'شو بدك', 'ar-gulf': 'وش تبي' } },
+  { en: 'i want', ar: 'أريد', fr: 'je veux', dialects: { 'ar-eg': 'عايز', 'ar-sy': 'بدي', 'ar-ma': 'بغيت', 'ar-iq': 'أريد', 'ar-gulf': 'أبغى' } },
+  { en: 'very much', ar: 'كثيراً', fr: 'beaucoup', dialects: { 'ar-gulf': 'وايد', 'ar-eg': 'أوي', 'ar-sy': 'كتير', 'ar-ma': 'بزاف', 'ar-iq': 'حيل' } },
+  { en: 'now', ar: 'الآن', fr: 'maintenant', dialects: { 'ar-iq': 'هسة', 'ar-eg': 'دلوقتي', 'ar-gulf': 'الحين', 'ar-ma': 'دابا', 'ar-sy': 'هلّق' } },
+  { en: 'good', ar: 'جيد', fr: 'bon', dialects: { 'ar-iq': 'زين', 'ar-eg': 'كويس', 'ar-sy': 'منيح', 'ar-ma': 'زوين' } },
+  { en: 'what is this', ar: 'ما هذا', fr: 'qu\'est-ce que c\'est', dialects: { 'ar-iq': 'شنو هذا', 'ar-eg': 'ايه ده', 'ar-sy': 'شو هادا' } },
+  { en: 'there is nothing', ar: 'لا يوجد شيء', fr: 'il n\'y a rien', dialects: { 'ar-iq': 'ماكو شي', 'ar-eg': 'مفيش حاجة', 'ar-sy': 'ما في شي' } },
+  { en: 'where are you', ar: 'أين أنت', fr: 'où es-tu', dialects: { 'ar-iq': 'وينك', 'ar-eg': 'انت فين', 'ar-sy': 'وينك' } },
+  { en: 'i love you', ar: 'أحبك', fr: 'je t\'aime', dialects: { 'ar-iq': 'أحبك', 'ar-eg': 'بحبك', 'ar-sy': 'بحبك', 'ar-ma': 'كنبغيك' } },
+  { en: 'see you later', ar: 'أراك لاحقاً', fr: 'à plus tard', dialects: { 'ar-iq': 'أشوفك بعدين', 'ar-eg': 'أشوفك بعدين' } },
+  { en: 'no problem', ar: 'لا مشكلة', fr: 'pas de problème', dialects: { 'ar-iq': 'ماكو مشكلة', 'ar-eg': 'مفيش مشكلة' } },
 
   // Specialized Domains (Medical, Legal, Technical, Religious)
   { en: 'artificial intelligence', ar: 'ذكاء اصطناعي', fr: 'intelligence artificielle', es: 'inteligencia artificial', de: 'künstliche intelligenz' },
@@ -162,6 +146,121 @@ export const OFFLINE_DICTIONARY: DictionaryEntry[] = [
   { en: 'in the name of god', ar: 'بسم الله الرحمن الرحيم', fr: 'au nom de dieu' },
   { en: 'blessings', ar: 'بركات', fr: 'bénédictions' },
   { en: 'god willing', ar: 'إن شاء الله', fr: 'si dieu le veut' },
+
+  // ---- High-frequency vocabulary (makes everyday sentences complete) ----
+  { en: 'today', ar: 'اليوم', fr: "aujourd'hui", es: 'hoy', de: 'heute', tr: 'bugün' },
+  { en: 'tomorrow', ar: 'غداً', fr: 'demain', es: 'mañana', de: 'morgen', tr: 'yarın' },
+  { en: 'yesterday', ar: 'أمس', fr: 'hier', es: 'ayer', de: 'gestern', tr: 'dün' },
+  { en: 'now', ar: 'الآن', fr: 'maintenant', es: 'ahora' },
+  { en: 'later', ar: 'لاحقاً', fr: 'plus tard', es: 'más tarde' },
+  { en: 'morning', ar: 'صباح', fr: 'matin', es: 'mañana' },
+  { en: 'night', ar: 'ليل', fr: 'nuit', es: 'noche' },
+  { en: 'evening', ar: 'مساء', fr: 'soir', es: 'tarde' },
+  { en: 'please', ar: 'من فضلك', fr: "s'il vous plaît", es: 'por favor', de: 'bitte' },
+  { en: 'yes', ar: 'نعم', fr: 'oui', es: 'sí', de: 'ja', tr: 'evet' },
+  { en: 'no', ar: 'لا', fr: 'non', es: 'no', de: 'nein', tr: 'hayır' },
+  { en: 'maybe', ar: 'ربما', fr: 'peut-être', es: 'quizás' },
+  { en: 'i', ar: 'أنا', fr: 'je', es: 'yo' },
+  { en: 'you', ar: 'أنت', fr: 'tu', es: 'tú' },
+  { en: 'he', ar: 'هو', fr: 'il', es: 'él' },
+  { en: 'she', ar: 'هي', fr: 'elle', es: 'ella' },
+  { en: 'we', ar: 'نحن', fr: 'nous', es: 'nosotros' },
+  { en: 'they', ar: 'هم', fr: 'ils', es: 'ellos' },
+  { en: 'my', ar: 'لي', fr: 'mon', es: 'mi' },
+  { en: 'your', ar: 'لك', fr: 'ton', es: 'tu' },
+  { en: 'friend', ar: 'صديق', fr: 'ami', es: 'amigo' },
+  { en: 'my friend', ar: 'صديقي', fr: 'mon ami', es: 'mi amigo' },
+  { en: 'is', ar: 'يكون', fr: 'est', es: 'es' },
+  { en: 'are', ar: 'تكون', fr: 'sont', es: 'son' },
+  { en: 'am', ar: 'أكون', fr: 'suis', es: 'soy' },
+  { en: 'was', ar: 'كان', fr: 'était', es: 'era' },
+  { en: 'have', ar: 'أملك', fr: 'avoir', es: 'tener' },
+  { en: 'has', ar: 'يملك', fr: 'a', es: 'tiene' },
+  { en: 'do', ar: 'يفعل', fr: 'faire', es: 'hacer' },
+  { en: 'go', ar: 'يذهب', fr: 'aller', es: 'ir' },
+  { en: 'come', ar: 'يأتي', fr: 'venir', es: 'venir' },
+  { en: 'eat', ar: 'يأكل', fr: 'manger', es: 'comer' },
+  { en: 'drink', ar: 'يشرب', fr: 'boire', es: 'beber' },
+  { en: 'sleep', ar: 'ينام', fr: 'dormir', es: 'dormir' },
+  { en: 'see', ar: 'يرى', fr: 'voir', es: 'ver' },
+  { en: 'know', ar: 'يعرف', fr: 'savoir', es: 'saber' },
+  { en: 'want', ar: 'يريد', fr: 'vouloir', es: 'querer' },
+  { en: 'need', ar: 'يحتاج', fr: 'avoir besoin', es: 'necesitar' },
+  { en: 'like', ar: 'يحب', fr: 'aimer', es: 'gustar' },
+  { en: 'love', ar: 'حب', fr: 'amour', es: 'amor' },
+  { en: 'good', ar: 'جيد', fr: 'bon', es: 'bueno' },
+  { en: 'bad', ar: 'سيئ', fr: 'mauvais', es: 'malo' },
+  { en: 'big', ar: 'كبير', fr: 'grand', es: 'grande' },
+  { en: 'small', ar: 'صغير', fr: 'petit', es: 'pequeño' },
+  { en: 'beautiful', ar: 'جميل', fr: 'beau', es: 'hermoso' },
+  { en: 'happy', ar: 'سعيد', fr: 'heureux', es: 'feliz' },
+  { en: 'sad', ar: 'حزين', fr: 'triste', es: 'triste' },
+  { en: 'hot', ar: 'حار', fr: 'chaud', es: 'caliente' },
+  { en: 'cold', ar: 'بارد', fr: 'froid', es: 'frío' },
+  { en: 'water', ar: 'ماء', fr: 'eau', es: 'agua', de: 'wasser', tr: 'su' },
+  { en: 'food', ar: 'طعام', fr: 'nourriture', es: 'comida' },
+  { en: 'bread', ar: 'خبز', fr: 'pain', es: 'pan' },
+  { en: 'tea', ar: 'شاي', fr: 'thé', es: 'té' },
+  { en: 'coffee', ar: 'قهوة', fr: 'café', es: 'café' },
+  { en: 'house', ar: 'منزل', fr: 'maison', es: 'casa' },
+  { en: 'home', ar: 'بيت', fr: 'maison', es: 'hogar' },
+  { en: 'hotel', ar: 'فندق', fr: 'hôtel', es: 'hotel' },
+  { en: 'airport', ar: 'مطار', fr: 'aéroport', es: 'aeropuerto' },
+  { en: 'car', ar: 'سيارة', fr: 'voiture', es: 'coche' },
+  { en: 'taxi', ar: 'سيارة أجرة', fr: 'taxi', es: 'taxi' },
+  { en: 'street', ar: 'شارع', fr: 'rue', es: 'calle' },
+  { en: 'city', ar: 'مدينة', fr: 'ville', es: 'ciudad' },
+  { en: 'country', ar: 'بلد', fr: 'pays', es: 'país' },
+  { en: 'money', ar: 'مال', fr: 'argent', es: 'dinero' },
+  { en: 'price', ar: 'سعر', fr: 'prix', es: 'precio' },
+  { en: 'cost', ar: 'تكلفة', fr: 'coût', es: 'costo' },
+  { en: 'time', ar: 'وقت', fr: 'temps', es: 'tiempo' },
+  { en: 'day', ar: 'يوم', fr: 'jour', es: 'día' },
+  { en: 'name', ar: 'اسم', fr: 'nom', es: 'nombre' },
+  { en: 'my name is', ar: 'اسمي', fr: 'je m\'appelle', es: 'me llamo' },
+  { en: 'what is your name', ar: 'ما اسمك', fr: 'comment tu t\'appelles', es: 'cómo te llamas' },
+  { en: 'how much', ar: 'كم', fr: 'combien', es: 'cuánto' },
+  { en: 'where', ar: 'أين', fr: 'où', es: 'dónde' },
+  { en: 'when', ar: 'متى', fr: 'quand', es: 'cuándo' },
+  { en: 'why', ar: 'لماذا', fr: 'pourquoi', es: 'por qué' },
+  { en: 'who', ar: 'من', fr: 'qui', es: 'quién' },
+  { en: 'what', ar: 'ماذا', fr: 'quoi', es: 'qué' },
+  { en: 'help', ar: 'مساعدة', fr: 'aide', es: 'ayuda' },
+  { en: 'help me', ar: 'ساعدني', fr: 'aidez-moi', es: 'ayúdame' },
+  { en: 'stop', ar: 'توقف', fr: 'arrête', es: 'para' },
+  { en: 'wait', ar: 'انتظر', fr: 'attends', es: 'espera' },
+  { en: 'quickly', ar: 'بسرعة', fr: 'vite', es: 'rápido' },
+  { en: 'slowly', ar: 'ببطء', fr: 'lentement', es: 'despacio' },
+  { en: 'open', ar: 'افتح', fr: 'ouvre', es: 'abre' },
+  { en: 'close', ar: 'أغلق', fr: 'ferme', es: 'cierra' },
+  { en: 'left', ar: 'يسار', fr: 'gauche', es: 'izquierda' },
+  { en: 'right', ar: 'يمين', fr: 'droite', es: 'derecha' },
+  { en: 'straight', ar: 'مباشرة', fr: 'tout droit', es: 'recto' },
+  { en: 'near', ar: 'قريب', fr: 'près', es: 'cerca' },
+  { en: 'far', ar: 'بعيد', fr: 'loin', es: 'lejos' },
+  { en: 'doctor', ar: 'طبيب', fr: 'médecin', es: 'médico' },
+  { en: 'hospital', ar: 'مستشفى', fr: 'hôpital', es: 'hospital' },
+  { en: 'pharmacy', ar: 'صيدلية', fr: 'pharmacie', es: 'farmacia' },
+  { en: 'school', ar: 'مدرسة', fr: 'école', es: 'escuela' },
+  { en: 'work', ar: 'عمل', fr: 'travail', es: 'trabajo' },
+  { en: 'family', ar: 'عائلة', fr: 'famille', es: 'familia' },
+  { en: 'mother', ar: 'أم', fr: 'mère', es: 'madre' },
+  { en: 'father', ar: 'أب', fr: 'père', es: 'padre' },
+  { en: 'brother', ar: 'أخ', fr: 'frère', es: 'hermano' },
+  { en: 'sister', ar: 'أخت', fr: 'sœur', es: 'hermana' },
+  { en: 'son', ar: 'ابن', fr: 'fils', es: 'hijo' },
+  { en: 'daughter', ar: 'ابنة', fr: 'fille', es: 'hija' },
+  { en: 'the hotel', ar: 'الفندق', fr: "l'hôtel", es: 'el hotel' },
+  { en: 'mahdi', ar: 'مهدي', fr: 'mahdi', es: 'mahdi' },
+  { en: 'cars', ar: 'سيارات', fr: 'voitures', es: 'coches' },
+  { en: 'i have', ar: 'لدي', fr: "j'ai", es: 'tengo' },
+  { en: 'a lot', ar: 'كثيراً', fr: 'beaucoup', es: 'mucho' },
+  { en: 'thank you my friend', ar: 'شكراً يا صديقي', fr: 'merci mon ami', es: 'gracias mi amigo' },
+  { en: 'see you', ar: 'أراك', fr: 'à bientôt', es: 'hasta luego' },
+  { en: 'good night', ar: 'تصبح على خير', fr: 'bonne nuit', es: 'buenas noches' },
+  { en: 'excuse me', ar: 'اعذرني', fr: 'excusez-moi', es: 'discúlpame' },
+  { en: 'i am', ar: 'أنا', fr: 'je suis', es: 'soy' },
+  { en: 'you are', ar: 'أنت', fr: 'tu es', es: 'eres' },
 ];
 
 /**
@@ -197,6 +296,12 @@ export function translateOffline(
   if (!text || !text.trim()) {
     return { translation: '', confidence: 'exact' };
   }
+
+  // Accept both the object form and the legacy positional form.
+  const options: OfflineTranslateOptions =
+    typeof optionsOrDomain === 'string'
+      ? { domain: optionsOrDomain, dialect: _dialect, tone: _tone }
+      : optionsOrDomain || {};
 
   const cleanInput = text.trim();
   const actualFromLang = (fromLang === 'auto' || !fromLang) ? detectLanguageFromText(cleanInput) : fromLang;
@@ -327,73 +432,182 @@ export function translateOffline(
     };
   }
 
-  // 1. Direct phrase lookup
-  for (const entry of OFFLINE_DICTIONARY) {
-    const fromVal = (entry as any)[actualFromLang];
-    const toVal = (entry as any)[toLang];
-
-    if (fromVal && toVal && normalizeText(fromVal) === normalizedInput) {
-      const isHi = normalizedInput === 'hi' || normalizedInput === 'hello';
-      return { 
-        translation: toVal,
-        transliteration: toVal === 'أهلاً' ? 'ahlaan' : toVal === 'مرحباً' ? 'marhaban' : '',
-        detectedLanguageName: actualFromLang === 'en' ? 'الإنجليزية، تم رصدها' : actualFromLang === 'ar' ? 'العربية، تم رصدها' : '',
-        moreTranslations: isHi ? [
-          { phrase: 'مرحبا!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Welcome!', 'Hello!', 'Hi!', 'Hallo!'] },
-          { phrase: 'أهلا!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Hi!', 'Hello!', 'Hallo!'] },
-          { phrase: 'هاي هتاف للفت الانتباه!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Hi!', 'Hello!'] }
-        ] : [],
-        definitions: isHi ? [
-          { partOfSpeech: 'صيغة تعجب', definition: 'used as a friendly greeting or to attract attention.', example: '"Hi there. How was the flight?"', number: 1 },
-          { partOfSpeech: 'اختصار', definition: 'Hawaii (in official postal use).', number: 1 }
-        ] : [],
-        confidence: 'exact',
-        engineNotice: 'تمت الترجمة بدقة تامة عبر حزمة اللغات المحلية (Mahdi Offline Engine)' 
-      };
-    }
+  // 1. Whole-phrase lookup — dialect-aware, so "how are you" with the Egyptian
+  //    dialect returns "ازيك" instead of the standard form.
+  const index = getPhraseIndex(actualFromLang, toLang, options.dialect);
+  const exactMatch = index.get(normalizedInput);
+  if (exactMatch) {
+    const isHi = normalizedInput === 'hi' || normalizedInput === 'hello';
+    return {
+      translation: exactMatch,
+      transliteration: exactMatch === 'أهلاً' ? 'ahlaan' : exactMatch === 'مرحباً' ? 'marhaban' : '',
+      detectedLanguageName: detectedLanguageLabel(actualFromLang),
+      moreTranslations: isHi ? [
+        { phrase: 'مرحبا!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Welcome!', 'Hello!', 'Hi!', 'Hallo!'] },
+        { phrase: 'أهلا!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Hi!', 'Hello!', 'Hallo!'] },
+        { phrase: 'هاي هتاف للفت الانتباه!', partOfSpeech: 'لفظ تعجب', reverseTranslations: ['Hi!', 'Hello!'] }
+      ] : [],
+      definitions: isHi ? [
+        { partOfSpeech: 'صيغة تعجب', definition: 'used as a friendly greeting or to attract attention.', example: '"Hi there. How was the flight?"', number: 1 },
+        { partOfSpeech: 'اختصار', definition: 'Hawaii (in official postal use).', number: 1 }
+      ] : [],
+      confidence: 'exact',
+      engineNotice: 'تمت الترجمة بدقة تامة عبر حزمة اللغات المحلية (Mahdi Offline Engine)'
+    };
   }
 
-  // 2. Multi-word segmentation & dictionary matching
-  const words = cleanInput.split(/\s+/);
-  const translatedWords: string[] = [];
-  let matchCount = 0;
+  // 2. Greedy longest-match segmentation.
+  //
+  // The previous implementation matched ONE word at a time, so a dictionary
+  // phrase such as "thank you" / "how are you" never matched inside a longer
+  // sentence ("how are you today" returned the source text unchanged). We now
+  // walk the sentence and try the longest dictionary phrase first (5 words down
+  // to 1), which makes whole sentences translate instead of a single word.
+  const words = cleanInput.split(/(\s+)/).filter(t => t.length > 0);
+  const out: string[] = [];
+  let matchedWords = 0;
+  const totalWords = words.filter(t => !/^\s+$/.test(t)).length;
 
-  for (const word of words) {
-    const cleanWord = normalizeText(word);
-    let matchedWord: string | null = null;
+  for (let i = 0; i < words.length; i++) {
+    const token = words[i];
+    if (/^\s+$/.test(token)) {
+      out.push(token); // keep the original spacing/line breaks intact
+      continue;
+    }
+    // Collect the next up-to-MAX_PHRASE_WORDS meaningful tokens.
+    const upcoming: { idx: number; norm: string; pre: string; post: string }[] = [];
+    for (let j = i; j < words.length && upcoming.length < MAX_PHRASE_WORDS; j++) {
+      if (/^\s+$/.test(words[j])) continue;
+      const p = splitPunct(words[j]);
+      upcoming.push({ idx: j, norm: normalizeText(p.core), pre: p.pre, post: p.post });
+    }
 
-    for (const entry of OFFLINE_DICTIONARY) {
-      const fromVal = (entry as any)[actualFromLang];
-      const toVal = (entry as any)[toLang];
+    let matched = false;
+    for (let n = upcoming.length; n >= 1; n--) {
+      const first = upcoming[0];
+      const last = upcoming[n - 1];
+      const key = upcoming.slice(0, n).map(u => u.norm).join(' ');
 
-      if (fromVal && toVal && normalizeText(fromVal) === cleanWord) {
-        matchedWord = toVal;
-        matchCount++;
+      // Numeric token(s): localise digits to the target language convention.
+      if (n === 1 && isNumeric(first.norm)) {
+        out.push(first.pre + localizeNumber(first.norm, toLang) + first.post);
+        i = first.idx;
+        matchedWords += 1;
+        matched = true;
+        break;
+      }
+
+      const hit = index.get(key);
+      if (hit) {
+        // Re-attach the punctuation that surrounded the matched phrase.
+        out.push(first.pre + hit + last.post);
+        i = last.idx; // skip the consumed tokens
+        matchedWords += n;
+        matched = true;
         break;
       }
     }
 
-    if (matchedWord) {
-      translatedWords.push(matchedWord);
-    } else {
-      // Keep original word if not in dictionary
-      translatedWords.push(word);
-    }
+    if (!matched) out.push(token); // unknown word: keep it verbatim
   }
 
-  if (matchCount > 0) {
+  const translation = out.join('').replace(/\s{2,}/g, ' ').trim();
+  const coverage = totalWords === 0 ? 0 : matchedWords / totalWords;
+
+  if (matchedWords > 0) {
     return {
-      translation: translatedWords.join(' '),
-      confidence: matchCount === words.length ? 'exact' : 'partial',
-      engineNotice: 'تمت الترجمة جزئياً عبر المعجم المحلي المحمل'
+      translation,
+      confidence: coverage >= 1 ? 'exact' : 'partial',
+      detectedLanguageName: detectedLanguageLabel(actualFromLang),
+      engineNotice:
+        coverage >= 1
+          ? 'تمت الترجمة كاملة عبر حزمة اللغات المحلية (Mahdi Offline Engine)'
+          : `تمت ترجمة ${matchedWords} من ${totalWords} كلمة عبر المعجم المحلي — بقية النص محفوظة كما هي`,
     };
   }
 
-  // 3. Fallback: Provide a clean transliteration or offline marker
+  // 3. Fallback: keep the text intact (never drop user input) and say so.
   return {
-    translation: `${cleanInput}`,
+    translation: cleanInput,
     confidence: 'fallback',
-    engineNotice: 'تم تفعيل المحرك المحلي للطوارئ (الكلمة غير مسجلة في الحزمة المحملة)'
+    detectedLanguageName: detectedLanguageLabel(actualFromLang),
+    engineNotice: 'النص غير موجود في الحزمة المحلية — يلزم الاتصال بالإنترنت لترجمته بدقة',
   };
+}
+
+/** Maximum dictionary phrase length (in words) considered during segmentation. */
+const MAX_PHRASE_WORDS = 5;
+
+/** Splits surrounding punctuation from a token so matching ignores it but output keeps it. */
+function splitPunct(token: string): { pre: string; core: string; post: string } {
+  const m = token.match(/^([^\p{L}\p{N}]*)([\p{L}\p{N}].*?)([^\p{L}\p{N}]*)$/u);
+  if (!m) return { pre: '', core: token, post: '' };
+  return { pre: m[1], core: m[2], post: m[3] };
+}
+
+function isNumeric(norm: string): boolean {
+  return /^[\d.,٠-٩]+$/.test(norm) && /\d|٠|١|٢|٣|٤|٥|٦|٧|٨|٩/.test(norm);
+}
+
+const ARABIC_INDIC = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+
+/** Localises a numeric string to the target language's digit convention. */
+function localizeNumber(norm: string, toLang: string): string {
+  const ascii = norm.replace(/[٠-٩]/g, d => String(ARABIC_INDIC.indexOf(d)));
+  if (toLang === 'ar' || toLang.startsWith('ar-') || toLang === 'fa' || toLang === 'ur') {
+    return ascii.replace(/\d/g, d => ARABIC_INDIC[Number(d)]);
+  }
+  return ascii;
+}
+
+const PHRASE_INDEX_CACHE = new Map<string, Map<string, string>>();
+
+/**
+ * Builds (and caches) a normalized "source phrase → target phrase" lookup for a
+ * language pair. When a dialect is requested and the dictionary holds a
+ * dialect-specific variant, that variant wins over the standard one.
+ */
+function getPhraseIndex(fromLang: string, toLang: string, dialect?: string): Map<string, string> {
+  const key = `${fromLang}>${toLang}>${dialect || 'standard'}`;
+  const cached = PHRASE_INDEX_CACHE.get(key);
+  if (cached) return cached;
+
+  const index = new Map<string, string>();
+  for (const entry of OFFLINE_DICTIONARY) {
+    const fromVal = (entry as any)[fromLang] as string | undefined;
+    let toVal = (entry as any)[toLang] as string | undefined;
+
+    // Dialect-specific target (e.g. Iraqi/Egyptian/Levantine Arabic).
+    if (dialect && dialect !== 'standard' && (entry as any).dialects) {
+      const dialectValue = (entry as any).dialects[dialect];
+      if (typeof dialectValue === 'string' && dialectValue) toVal = dialectValue;
+    }
+
+    if (!fromVal || !toVal) continue;
+    const norm = normalizeText(fromVal);
+    // A dialect-aware entry may overwrite the standard one; otherwise keep the first.
+    const dialectSpecific = Boolean(dialect && dialect !== 'standard' && (entry as any).dialects?.[dialect]);
+    if (!index.has(norm) || dialectSpecific) index.set(norm, toVal);
+  }
+
+  PHRASE_INDEX_CACHE.set(key, index);
+  return index;
+}
+
+/** Arabic label shown in the "detected language" chip. */
+function detectedLanguageLabel(langCode: string): string {
+  const names: Record<string, string> = {
+    en: 'الإنجليزية، تم رصدها',
+    ar: 'العربية، تم رصدها',
+    fr: 'الفرنسية، تم رصدها',
+    es: 'الإسبانية، تم رصدها',
+    de: 'الألمانية، تم رصدها',
+    tr: 'التركية، تم رصدها',
+    ru: 'الروسية، تم رصدها',
+    it: 'الإيطالية، تم رصدها',
+    zh: 'الصينية، تم رصدها',
+    ja: 'اليابانية، تم رصدها',
+  };
+  return names[langCode] || '';
 }
 

@@ -104,21 +104,21 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col w-full h-full bg-zinc-950/98 text-white backdrop-blur-2xl animate-in slide-in-from-bottom-4 duration-300 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex flex-col w-full h-full mt-sheet overflow-hidden">
       <div 
         className={`w-full h-full flex flex-col ${theme.card} ${theme.text} overflow-hidden`}
         dir="rtl"
       >
         {/* Top Header - Full Width Sticky */}
-        <div className="flex items-center justify-between px-4 sm:px-8 py-3.5 border-b border-white/10 bg-black/30 shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-8 py-3.5 border-b mt-hairline mt-sheet-header shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 sm:p-2.5 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <div className="p-2 sm:p-2.5 rounded-2xl mt-accent-soft mt-accent-text border mt-hairline">
               <Download className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold tracking-tight">حزم اللغات بدون إنترنت (Offline Packs)</h2>
-                <span className="px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <span className="px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full mt-accent-soft mt-accent-text border border-emerald-500/30">
                   {downloadedCount} لغة جاهزة
                 </span>
               </div>
@@ -131,7 +131,7 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => downloadAllEssentialPacks()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl mt-accent-soft hover:bg-amber-500/30 mt-accent-text border mt-hairline transition-all active:scale-95"
               title="تحميل جميع الحزم الموصى بها تلقائياً"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -141,14 +141,14 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
             <button
               onClick={() => updateAllDownloadedPacks()}
               title="تحديث الحزم المحملة"
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 transition-all active:scale-95"
+              className="p-2 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] mt-subtext transition-all active:scale-95"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
 
             <button 
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-zinc-200 hover:text-white transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
+              className="px-3.5 py-1.5 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] hover:text-[var(--mt-text)] transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
               title="إغلاق والعودة"
             >
               <X className="w-4 h-4" />
@@ -161,7 +161,7 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           
           {/* THE LATERAL SIDEBAR (الشريط الجانبي الأنيق لأزرار الحزم) */}
-          <aside className="w-full md:w-64 border-b md:border-b-0 md:border-l border-white/10 bg-black/15 flex md:flex-col overflow-x-auto md:overflow-y-auto p-2 sm:p-3 gap-1 shrink-0 no-scrollbar">
+          <aside className="w-full md:w-64 border-b md:border-b-0 md:border-l mt-hairline bg-black/15 flex md:flex-col overflow-x-auto md:overflow-y-auto p-2 sm:p-3 gap-1 shrink-0 no-scrollbar">
             <div className="hidden md:flex items-center justify-between px-2 py-1 mb-1">
               <span className="text-[11px] font-bold opacity-50 uppercase tracking-wider">الأقسام والفئات</span>
               <Database className="w-3.5 h-3.5 opacity-40" />
@@ -177,17 +177,17 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
                   onClick={() => setActiveNavCategory(cat.id as any)}
                   className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all shrink-0 md:w-full text-right ${
                     isActive
-                      ? 'bg-amber-500 text-zinc-950 font-bold shadow-md shadow-amber-500/20'
-                      : 'bg-white/[0.02] md:bg-transparent hover:bg-white/10 text-zinc-300 opacity-80 hover:opacity-100'
+                      ? 'mt-btn-primary font-bold shadow-md shadow-amber-500/20'
+                      : 'mt-surface-soft md:bg-transparent hover:bg-[var(--mt-surface)] mt-subtext opacity-80 hover:opacity-100'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-zinc-950' : 'text-amber-400/80'}`} />
+                    <Icon className={`w-4 h-4 ${isActive ? '' : 'mt-accent-text/80'}`} />
                     <span className="whitespace-nowrap">{cat.label}</span>
                   </div>
                   {cat.count !== null && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                      isActive ? 'bg-zinc-900/20 text-zinc-950' : 'bg-white/10 text-zinc-400'
+                      isActive ? 'bg-zinc-900/20 ' : 'mt-surface-soft mt-subtext'
                     }`}>
                       {cat.count}
                     </span>
@@ -197,18 +197,18 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
             })}
 
             {/* Storage quick status in sidebar footer on desktop */}
-            <div className="hidden md:block mt-auto pt-3 border-t border-white/10 p-2 text-[11px] space-y-1.5 opacity-80">
+            <div className="hidden md:block mt-auto pt-3 border-t mt-hairline p-2 text-[11px] space-y-1.5 opacity-80">
               <div className="flex justify-between font-medium">
                 <span>المساحة:</span>
-                <span className="text-amber-400 font-bold">{usedGB} GB</span>
+                <span className="mt-accent-text font-bold">{usedGB} GB</span>
               </div>
-              <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div className="w-full h-1.5 rounded-full mt-surface-soft overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full"
                   style={{ width: `${Math.max(3, usedPercent)}%` }}
                 />
               </div>
-              <div className="flex items-center gap-1 text-[10px] text-emerald-400">
+              <div className="flex items-center gap-1 text-[10px] mt-accent-text">
                 <Wifi className="w-3 h-3" />
                 <span>جاهز للعمل التلقائي أوفلاين</span>
               </div>
@@ -219,7 +219,7 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
           <main className="flex-1 flex flex-col overflow-hidden">
             
             {/* Search and Global Quick Bar */}
-            <div className="p-3 sm:p-4 border-b border-white/5 bg-black/5 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="p-3 sm:p-4 border-b mt-hairline mt-surface-soft flex flex-wrap items-center justify-between gap-3 shrink-0">
               <div className="relative flex-1 min-w-[180px] max-w-md">
                 <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 opacity-50" />
                 <input 
@@ -227,13 +227,13 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="ابحث عن لغة، لهجة، أو نوع الحزمة..."
-                  className="w-full pl-3 pr-9 py-1.5 text-xs rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-amber-500/50"
+                  className="w-full pl-3 pr-9 py-1.5 text-xs rounded-xl mt-surface-soft border mt-hairline focus:outline-none focus:border-amber-500/50"
                 />
               </div>
 
               <div className="flex items-center gap-3 text-xs opacity-75">
-                <span className="flex items-center gap-1 text-amber-300 text-[11px] font-bold">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="flex items-center gap-1 mt-accent-text text-[11px] font-bold">
+                  <ShieldCheck className="w-3.5 h-3.5 mt-accent-text" />
                   <span>تخزين مشفر محلياً على جهازك</span>
                 </span>
               </div>
@@ -242,8 +242,8 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
             {/* STORAGE & SETTINGS VIEW (If user selected storage in sidebar) */}
             {activeNavCategory === 'storage' ? (
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-                <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4">
-                  <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                <div className="p-5 rounded-2xl mt-surface-soft border mt-hairline space-y-4">
+                  <h3 className="text-sm font-bold mt-accent-text flex items-center gap-2">
                     <HardDrive className="w-4 h-4" />
                     <span>إدارة مساحة الذاكرة التخزينية للحزم</span>
                   </h3>
@@ -251,9 +251,9 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
                       <span>إجمالي المساحة المستخدمة حالياً:</span>
-                      <strong className="text-amber-400 text-sm">{usedGB} GB ({totalStorageMB} MB)</strong>
+                      <strong className="mt-accent-text text-sm">{usedGB} GB ({totalStorageMB} MB)</strong>
                     </div>
-                    <div className="w-full h-3 rounded-full bg-white/10 overflow-hidden">
+                    <div className="w-full h-3 rounded-full mt-surface-soft overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all"
                         style={{ width: `${Math.max(2, usedPercent)}%` }}
@@ -271,7 +271,7 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
                           packs.filter(p => p.status === 'downloaded').forEach(p => deletePack(p.id));
                         }
                       }}
-                      className="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-xs font-bold flex items-center gap-1.5 transition-all"
+                      className="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 mt-danger-text text-xs font-bold flex items-center gap-1.5 transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
                       <span>تفريغ مساحة جميع الحزم المحملة</span>
@@ -296,15 +296,15 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
                     return (
                       <div 
                         key={pack.id}
-                        className="p-3 sm:p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                        className="p-3 sm:p-3.5 rounded-2xl mt-surface-soft hover:bg-[var(--mt-surface)] border mt-hairline hover:border-[var(--mt-border-strong)] transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                       >
                         <div className="flex items-start gap-3 flex-1 min-w-0">
                           <div className={`p-2.5 rounded-2xl shrink-0 mt-0.5 ${
                             isDownloaded 
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                              ? 'mt-accent-soft mt-accent-text border border-emerald-500/30' 
                               : isDownloading
-                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse'
-                              : 'bg-white/5 text-zinc-400 border border-white/10'
+                              ? 'mt-accent-soft mt-accent-text border mt-hairline animate-pulse'
+                              : 'mt-surface-soft mt-subtext border mt-hairline'
                           }`}>
                             {isDownloaded ? <CheckCircle className="w-4 h-4" /> : <Download className="w-4 h-4" />}
                           </div>
@@ -314,11 +314,11 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
                               <h4 className="font-bold text-xs sm:text-sm">{pack.langNative}</h4>
                               <span className="text-xs opacity-60">({pack.langName})</span>
                               {pack.isEssential && (
-                                <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-md mt-accent-soft mt-accent-text border mt-hairline">
                                   موصى به
                                 </span>
                               )}
-                              <span className="px-1.5 py-0.5 text-[9px] rounded-md bg-white/5 font-mono text-zinc-400">
+                              <span className="px-1.5 py-0.5 text-[9px] rounded-md mt-surface-soft font-mono mt-subtext">
                                 {pack.sizeMB} MB
                               </span>
                             </div>
@@ -331,10 +331,10 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
                             {isDownloading && (
                               <div className="mt-2 space-y-1">
                                 <div className="flex justify-between text-[10px]">
-                                  <span className="text-amber-400 font-bold">جاري التنزيل والتثبيت...</span>
+                                  <span className="mt-accent-text font-bold">جاري التنزيل والتثبيت...</span>
                                   <span className="font-mono">{pack.progress}%</span>
                                 </div>
-                                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                                <div className="w-full h-1.5 rounded-full mt-surface-soft overflow-hidden">
                                   <div 
                                     className="h-full bg-amber-500 rounded-full transition-all duration-200"
                                     style={{ width: `${pack.progress}%` }}
@@ -349,13 +349,13 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
                         <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
                           {isDownloaded ? (
                             <>
-                              <span className="text-emerald-400 text-xs font-bold flex items-center gap-1 pl-2">
+                              <span className="mt-accent-text text-xs font-bold flex items-center gap-1 pl-2">
                                 <CheckCircle className="w-3.5 h-3.5" />
                                 <span>مثبت محلياً</span>
                               </span>
                               <button
                                 onClick={() => deletePack(pack.id)}
-                                className="p-1.5 rounded-xl hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-colors"
+                                className="p-1.5 rounded-xl hover:bg-[var(--mt-accent-soft)] mt-subtext hover:text-[var(--mt-danger)] transition-colors"
                                 title="حذف الحزمة لتفريغ المساحة"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -364,7 +364,7 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
                           ) : isDownloading ? (
                             <button
                               onClick={() => pauseDownloadPack(pack.id)}
-                              className="px-2.5 py-1 text-xs font-bold rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 flex items-center gap-1"
+                              className="px-2.5 py-1 text-xs font-bold rounded-xl mt-accent-soft hover:bg-amber-500/30 mt-accent-text flex items-center gap-1"
                             >
                               <Pause className="w-3 h-3" />
                               <span>إيقاف مؤقت</span>
@@ -372,7 +372,7 @@ export const OfflinePacksModal: React.FC<OfflinePacksModalProps> = ({
                           ) : (
                             <button
                               onClick={() => startDownloadPack(pack.id)}
-                              className="px-3 py-1.5 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 flex items-center gap-1 transition-all active:scale-95 shadow-sm"
+                              className="px-3 py-1.5 text-xs font-bold rounded-xl mt-btn-primary flex items-center gap-1 transition-all active:scale-95 shadow-sm"
                             >
                               <Download className="w-3 h-3" />
                               <span>تنزيل</span>

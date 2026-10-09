@@ -106,6 +106,12 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   highContrast: false,
   screenReaderOptimized: false,
   keyboardShortcuts: true,
+
+  translateDelayMs: 260,
+  autoSpeakTarget: false,
+  showTransliteration: true,
+  historyLimit: 100,
+  autoSwapOnDetected: false,
 };
 
 

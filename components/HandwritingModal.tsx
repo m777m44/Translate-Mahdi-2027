@@ -94,33 +94,33 @@ export const HandwritingModal: React.FC<HandwritingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in">
+    <div className="mt-modal-backdrop">
       <div 
-        className="w-full max-w-md rounded-3xl bg-zinc-900 border border-zinc-700 shadow-2xl overflow-hidden flex flex-col text-right"
+        className="w-full max-w-md rounded-3xl mt-surface-soft border mt-hairline shadow-2xl overflow-hidden flex flex-col text-right"
         dir="rtl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/90">
+        <div className="flex items-center justify-between p-4 border-b mt-hairline mt-surface-soft">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-sky-500/20 mt-accent-text flex items-center justify-center">
               <Pen size={18} />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">الكتابة بخط اليد</h2>
-              <p className="text-[11px] text-zinc-400">اكتب هنا بإصبعك أو بالفأرة</p>
+              <h2 className="text-sm font-bold">الكتابة بخط اليد</h2>
+              <p className="text-[11px] mt-subtext">اكتب هنا بإصبعك أو بالفأرة</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10"
+            className="p-1.5 rounded-xl mt-subtext hover:text-[var(--mt-text)] hover:bg-[var(--mt-surface)]"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Canvas Area */}
-        <div className="p-3 bg-zinc-950 flex flex-col items-center justify-center">
-          <div className="relative w-full h-56 rounded-2xl bg-zinc-900 border-2 border-dashed border-zinc-700/80 overflow-hidden cursor-crosshair">
+        <div className="p-3 mt-surface-soft flex flex-col items-center justify-center">
+          <div className="relative w-full h-56 rounded-2xl mt-surface-soft border-2 border-dashed mt-hairline overflow-hidden cursor-crosshair">
             <canvas
               ref={canvasRef}
               onMouseDown={startDrawing}
@@ -133,7 +133,7 @@ export const HandwritingModal: React.FC<HandwritingModalProps> = ({
               className="w-full h-full touch-none"
             />
             {!hasDrawn && (
-              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-zinc-500 text-xs">
+              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center mt-subtext text-xs">
                 <Pen size={28} className="mb-2 opacity-40 animate-pulse" />
                 <span>اكتب الحروف أو الكلمات هنا...</span>
               </div>
@@ -147,16 +147,16 @@ export const HandwritingModal: React.FC<HandwritingModalProps> = ({
               value={recognizedText}
               onChange={(e) => setRecognizedText(e.target.value)}
               placeholder="أو اكتب النص المكتوب للترجمة المباشرة..."
-              className="w-full px-3 py-2 text-xs bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:border-sky-500"
+              className="w-full px-3 py-2 text-xs mt-surface-soft border mt-hairline rounded-xl placeholder:mt-subtext focus:outline-none focus:border-sky-500"
             />
           </div>
         </div>
 
         {/* Controls */}
-        <div className="p-3 border-t border-zinc-800 bg-zinc-900 flex items-center justify-between">
+        <div className="p-3 border-t mt-hairline mt-surface-soft flex items-center justify-between">
           <button
             onClick={clearCanvas}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl mt-surface-soft hover:brightness-110 text-xs font-bold transition-colors"
           >
             <RotateCcw size={14} />
             <span>مسح اللوحة</span>
@@ -165,7 +165,7 @@ export const HandwritingModal: React.FC<HandwritingModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-3 py-1.5 rounded-xl text-zinc-400 hover:text-white text-xs font-bold"
+              className="px-3 py-1.5 rounded-xl mt-subtext hover:text-[var(--mt-text)] text-xs font-bold"
             >
               إلغاء
             </button>
