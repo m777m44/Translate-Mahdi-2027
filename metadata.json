@@ -1,7 +1,7 @@
 {
-  "name": "Mahdi Translator Pro 4.0 — RTranslator-grade on-device AI",
-  "version": "4.0.0",
-  "description": "Advanced on-device neural translator (NLLB / Marian-Bergamot / Whisper via Transformers.js + ONNX Runtime Web), WalkieTalkie dual-language mode, WebRTC peer-to-peer translated conversation, document/subtitle translation, offline phrasebook with Leitner flashcards, 1544 themes and cloud sync.",
+  "name": "Mahdi Translator Pro 4.1 — RTranslator-grade on-device AI",
+  "version": "4.1.0",
+  "description": "Advanced on-device neural translator (NLLB / Marian-Bergamot / Whisper via Transformers.js + ONNX Runtime Web), WalkieTalkie dual-language mode, WebRTC peer-to-peer translated conversation, document/subtitle translation, offline phrasebook with Leitner flashcards, 1544 themes and cloud sync. v4.1 adds a Google gtx keyless engine, mixed-script output guard with name transliteration in both online and offline modes, word-by-word breakdown analysis, wake lock, phrase of the day and a fully Android-responsive interface.",
   "requestFramePermissions": [
     "camera",
     "microphone"
@@ -16,6 +16,11 @@
     "OFFLINE_PHRASEBOOK_FLASHCARDS",
     "TRIGRAM_LANGUAGE_IDENTIFICATION",
     "SERVER_SIDE_GEMINI_API",
-    "FIRESTORE_CLOUD_SYNC"
+    "FIRESTORE_CLOUD_SYNC",
+    "GOOGLE_GTX_KEYLESS_FREE_ENGINE",
+    "MIXED_SCRIPT_OUTPUT_GUARD",
+    "WORD_BY_WORD_BREAKDOWN",
+    "WAKE_LOCK_KEEP_SCREEN_ON",
+    "ANDROID_SAFE_AREA_RESPONSIVE_UI"
   ]
 }

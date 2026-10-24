@@ -140,6 +140,9 @@ await renderModal('../components/PhrasebookModal.tsx', sharedModalProps);
 await renderModal('../components/DocumentTranslateModal.tsx', sharedModalProps);
 await renderModal('../components/StatsModal.tsx', { isOpen: true, onClose: noop, theme });
 await renderModal('../components/WhatsNewModal.tsx', { isOpen: true, onClose: noop, theme });
+await renderModal('../components/WordBreakdownModal.tsx', {
+  isOpen: true, onClose: noop, theme, text: 'Mahdi Heroes ahmed where is the airport', from: 'en', to: 'ar', onSpeak: noop,
+});
 
 console.log(`\n${failures === 0 ? '✅ ALL APP CHECKS PASSED' : `❌ ${failures} CHECK(S) FAILED`}\n`);
 process.exit(failures === 0 ? 0 : 1);

@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
+import { ensureTargetScript, beautifyArabic } from './transliterate.ts';
 
 const app = express();
 const PORT = 3000;
@@ -39,34 +40,101 @@ const LIBRE_MIRRORS = [
   'https://lt.vern.cc/translate',
 ];
 
-async function freeTranslate(text: string, from: string, to: string): Promise<string | null> {
-  const src = !from || from === 'auto' ? 'en' : from;
-  const tgt = to || 'ar';
+/** Lightweight server-side language detection (mirrors the client heuristic). */
+function detectLangServer(text: string): string {
+  const t = text.trim();
+  if (/[؀-ۿ]/.test(t)) return 'ar';
+  if (/[぀-ヿ]/.test(t)) return 'ja';
+  if (/[一-鿿]/.test(t)) return 'zh';
+  if (/[Ѐ-ӿ]/.test(t)) return 'ru';
+  if (/[ğüşıöçĞÜŞİÖÇ]/.test(t)) return 'tr';
+  if (/[äöüßÄÖÜ]/.test(t)) return 'de';
+  if (/[ñáéíóú¿¡]/.test(t)) return 'es';
+  if (/[éàèùâêîôûëïüÿçœæ]/.test(t)) return 'fr';
+  return 'en';
+}
 
-  // 1) MyMemory — keyless, generous, reliable.
-  try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(`${src}|${tgt}`)}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
-    if (res.ok) {
-      const data: any = await res.json();
-      const t = data?.responseData?.translatedText;
-      if (typeof t === 'string' && t && !/INVALID|NO QUERY|PLEASE SELECT/i.test(t)) return t;
+/** Split long text into <=450-char chunks on sentence boundaries (MyMemory limit). */
+function chunkForFreeEngine(text: string, max = 450): string[] {
+  if (text.length <= max) return [text];
+  const sentences = text.match(/[^.!?؟\n]+[.!?؟\n]*/g) || [text];
+  const chunks: string[] = [];
+  let current = '';
+  for (const s of sentences) {
+    if ((current + s).length > max && current) {
+      chunks.push(current.trim());
+      current = '';
     }
+    if (s.length > max) {
+      // Hard-split an oversized sentence on commas/spaces.
+      const parts = s.match(new RegExp(`.{1,${max}}`, 'g')) || [s];
+      parts.forEach((p, i) => { if (i === parts.length - 1) current += p; else chunks.push(p.trim()) });
+    } else {
+      current += s;
+    }
+  }
+  if (current.trim()) chunks.push(current.trim());
+  return chunks;
+}
+
+/** Google's public keyless "gtx" endpoint — high quality, handles names well. */
+async function googleGtxTranslate(text: string, src: string, tgt: string): Promise<string | null> {
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(src)}&tl=${encodeURIComponent(tgt)}&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(7000),
+      headers: { 'User-Agent': 'Mozilla/5.0 (Android) MahdiTranslate/4.1' },
+    });
+    if (!res.ok) return null;
+    const data: any = await res.json();
+    if (!Array.isArray(data?.[0])) return null;
+    const out = data[0].map((seg: any) => (Array.isArray(seg) ? seg[0] : '')).filter(Boolean).join('');
+    return out || null;
+  } catch {
+    return null;
+  }
+}
+
+async function freeTranslate(text: string, from: string, to: string): Promise<string | null> {
+  const src = !from || from === 'auto' ? detectLangServer(text) : from;
+  const tgt = to || 'ar';
+  const chunks = chunkForFreeEngine(text);
+
+  // 1) Google gtx — best keyless quality, proper named-entity transliteration.
+  try {
+    const parts = await Promise.all(chunks.map((c) => googleGtxTranslate(c, src, tgt)));
+    if (parts.every(Boolean)) return parts.join(' ');
   } catch {}
 
-  // 2) LibreTranslate public mirrors.
+  // 2) MyMemory — keyless, generous, reliable (chunked to respect its limits).
+  try {
+    const parts = await Promise.all(
+      chunks.map(async (c) => {
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(c)}&langpair=${encodeURIComponent(`${src}|${tgt}`)}`;
+        const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+        if (!res.ok) return null;
+        const data: any = await res.json();
+        const t = data?.responseData?.translatedText;
+        return typeof t === 'string' && t && !/INVALID|NO QUERY|PLEASE SELECT/i.test(t) ? t : null;
+      }),
+    );
+    if (parts.every(Boolean)) return parts.join(' ');
+  } catch {}
+
+  // 3) LibreTranslate public mirrors.
   for (const mirror of LIBRE_MIRRORS) {
     try {
-      const res = await fetch(mirror, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: text, source: src, target: tgt, format: 'text' }),
-        signal: AbortSignal.timeout(6000),
-      });
-      if (res.ok) {
-        const data: any = await res.json();
-        if (typeof data?.translatedText === 'string' && data.translatedText) return data.translatedText;
-      }
+      const parts = await Promise.all(
+        chunks.map((c) =>
+          fetch(mirror, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ q: c, source: src, target: tgt, format: 'text' }),
+            signal: AbortSignal.timeout(6000),
+          }).then(async (res) => (res.ok ? ((await res.json())?.translatedText as string) : null)).catch(() => null),
+        ),
+      );
+      if (parts.every(Boolean)) return parts.join(' ');
     } catch {}
   }
 
@@ -174,6 +242,13 @@ app.post('/api/translate', async (req, res) => {
     const isAuto = !from || from === 'auto';
     const sourceLangPrompt = isAuto ? 'the automatically detected source language' : from;
     const targetLang = to || 'Arabic';
+    const targetCode = to || 'ar';
+    // Last line of defence: guarantee the response is fully in the target
+    // writing system (residual source-script words are transliterated).
+    const finalize = (t: string): string => {
+      if (typeof t !== 'string' || !t) return t;
+      return beautifyArabic(ensureTargetScript(t, targetCode), targetCode);
+    };
     const domainContext = domain && domain !== 'general' ? `Specialized Domain: ${domain}` : '';
     const toneContext = tone && tone !== 'standard' ? `Tone: ${tone}` : '';
     const dialectContext = dialect && dialect !== 'standard' ? `Dialect target: ${dialect}` : '';
@@ -194,6 +269,9 @@ app.post('/api/translate', async (req, res) => {
     const formatRules = [
       preserveFormatting === false ? 'Flatten line breaks into flowing prose.' : 'Preserve the original line breaks, lists, and paragraph structure exactly.',
       translateNumbers === false ? 'Keep digits, dates, currencies and measurements in their original form.' : 'Localise digits, dates, currencies and units to the target-language convention.',
+      'Translate EVERY word of the input, including proper nouns and brand names. Names must be rendered naturally in the TARGET script via transliteration — never left in the source alphabet.',
+      'The output translation must be written entirely in the target language writing system. Never produce mixed-script sentences (e.g. Arabic text containing untouched English words); if no equivalent exists, transliterate the word into the target script.',
+      'Do not echo, skip or partially translate any word. URLs, e-mail addresses, code identifiers, file paths and placeholders such as {name} or %s are the only tokens allowed to keep their original form.',
       'Never translate code identifiers, URLs, file paths, or placeholders such as {name} and %s.',
       'Output ONLY the requested JSON — no markdown fences, no commentary.',
     ].join('\n');
@@ -239,12 +317,12 @@ Text to translate:
       try {
         const parsed = JSON.parse(response.text || '{}');
         return res.json({
-          translation: parsed.translation || '',
+          translation: finalize(parsed.translation || ''),
           analysis: parsed,
         });
       } catch {
         return res.json({
-          translation: response.text ? response.text.trim() : '',
+          translation: finalize(response.text ? response.text.trim() : ''),
           analysis: null,
         });
       }
@@ -303,15 +381,15 @@ Text to translate:
     try {
       const parsed = JSON.parse(rawText);
       return res.json({
-        translation: parsed.translation || rawText,
+        translation: finalize(parsed.translation || rawText),
         transliteration: parsed.transliteration || '',
         detectedLanguageName: parsed.detectedLanguageName || '',
         moreTranslations: Array.isArray(parsed.moreTranslations) ? parsed.moreTranslations : [],
         definitions: Array.isArray(parsed.definitions) ? parsed.definitions : [],
       });
     } catch {
-      return res.json({ 
-        translation: rawText.replace(/^\{.*"translation":\s*"([^"]+)".*\}$/s, '$1') || rawText,
+      return res.json({
+        translation: finalize(rawText.replace(/^\{.*"translation":\s*"([^"]+)".*\}$/s, '$1') || rawText),
         transliteration: '',
         detectedLanguageName: '',
         moreTranslations: [],
@@ -329,8 +407,9 @@ Text to translate:
       const body = (req.body || {}) as { text?: string; from?: string; to?: string };
       const free = await freeTranslate(body.text || '', body.from || 'auto', body.to || 'ar').catch(() => null);
       if (free) {
+        const freeCode = body.to || 'ar';
         return res.json({
-          translation: free,
+          translation: beautifyArabic(ensureTargetScript(free, freeCode), freeCode),
           transliteration: '',
           detectedLanguageName: '',
           moreTranslations: [],

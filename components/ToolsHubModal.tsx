@@ -1,13 +1,14 @@
 import React from 'react';
 import {
   X, Camera, Users, Radio, Wifi, Cpu, FileText, Brain, BarChart3, HardDrive,
-  AppWindow, Pen, Star, Palette, Settings, Languages, Sparkles,
+  AppWindow, Pen, Star, Palette, Settings, Languages, Sparkles, ListTree,
 } from 'lucide-react';
 import { ThemeConfig } from '../types.ts';
 
 export type ToolId =
   | 'image' | 'dual' | 'walkie' | 'p2p' | 'neural' | 'document' | 'phrasebook'
-  | 'stats' | 'packs' | 'floating' | 'handwriting' | 'starred' | 'themes' | 'settings';
+  | 'stats' | 'packs' | 'floating' | 'handwriting' | 'starred' | 'themes' | 'settings'
+  | 'breakdown';
 
 interface Tool {
   id: ToolId;
@@ -23,6 +24,7 @@ const TOOLS: Tool[] = [
   { id: 'neural', nameAr: 'النماذج العصبية', desc: 'NLLB و Whisper على جهازك بدون إنترنت', icon: <Cpu size={22} />, isNew: true },
   { id: 'document', nameAr: 'ترجمة المستندات', desc: 'ملفات TXT و SRT و VTT مع الحفاظ على التوقيت', icon: <FileText size={22} />, isNew: true },
   { id: 'phrasebook', nameAr: 'العبارات والبطاقات', desc: 'بنك جمل أوفلاين ومراجعة بالتكرار المتباعد', icon: <Brain size={22} />, isNew: true },
+  { id: 'breakdown', nameAr: 'تحليل الكلمات', desc: 'ترجمة كل كلمة على حدة ونوعها وتغطيتها', icon: <ListTree size={22} />, isNew: true },
   { id: 'stats', nameAr: 'لوحة الإحصائيات', desc: 'إنجازك اليومي وأكثر اللغات استخداماً', icon: <BarChart3 size={22} />, isNew: true },
   { id: 'dual', nameAr: 'المحادثة الثنائية', desc: 'ترجمة صوتية تبادلية بين متحدثين', icon: <Users size={22} /> },
   { id: 'image', nameAr: 'ترجمة الصور', desc: 'التقاط النص من الكاميرا وترجمته (OCR)', icon: <Camera size={22} /> },

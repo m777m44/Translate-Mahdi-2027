@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { ThemeConfig } from '../types.ts';
 
-const VERSION = '4.0.0';
+const VERSION = '4.1.0';
 const SEEN_KEY = 'mahdi_whatsnew_seen';
 
 export function shouldShowWhatsNew(): boolean {
@@ -28,6 +28,31 @@ interface Props {
 }
 
 const HIGHLIGHTS = [
+  {
+    icon: ShieldCheck,
+    title: 'ترجمة بلا خط مختلط — إصلاح شامل',
+    desc: 'كل كلمة تُترجَم أو تُحوَّل لخط اللغة هدف (نقحرة عربية للأعلام والأسماء)، في الأونلاين والأوفلاين معاً. لن تبقى كلمة لاتينية عالقة مثل «Heroes» داخل ترجمتك بعد اليوم.',
+  },
+  {
+    icon: Wifi,
+    title: 'محرك Google gtx المجاني الجديد',
+    desc: 'أُضيف محرر جوجل بدون مفتاح كأفضل خيار مجاني، مع تقسيم النصوص الطويلة إلى مقاطع على حدود الجمل ودمجها بسلاسة — ترتيب المحركات: Google ثم MyMemory ثم LibreTranslate.',
+  },
+  {
+    icon: Brain,
+    title: 'تحليل الكلمات التفصيلي',
+    desc: 'نافذة جديدة تعرض ترجمة كل كلمة على حدة، نوعها (اسم/فعل/حرف…)، ونسبة التغطية المعجمية — أداة تعلّم وفهم دقيقة بلمسة واحدة من شريط النتيجة.',
+  },
+  {
+    icon: Zap,
+    title: 'إبقاء الشاشة مضاءة + عبارة اليوم',
+    desc: 'زر Power في الترويسة يمنع انطفاء الشاشة أثناء الجلسات الطويلة، وبانر «عبارة اليوم» يقترح جملة مفيدة يومياً من بنك العبارات الثماني اللغات.',
+  },
+  {
+    icon: Sparkles,
+    title: 'واجهة متجاوبة لكل شاشات أندرويد',
+    desc: 'أزرار ومسافات وأحجام خطوط متدرجة، مودالات منبثقة بملء الشاشة على الهواتف، دعم النتوء وشريط الإيماءات (safe-area)، ومنع أي تمدد أفقي للنصوص الطويلة.',
+  },
   {
     icon: Cpu,
     title: 'ذكاء اصطناعي يعمل على جهازك',
@@ -73,7 +98,7 @@ const HIGHLIGHTS = [
 export const WhatsNewModal: React.FC<Props> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
   return (
-    <div className="mt-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label="ما الجديد في الإصدار 4.0">
+    <div className="mt-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label="ما الجديد في الإصدار 4.1">
       <div className="mt-modal w-full max-w-2xl" dir="rtl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: 'var(--mt-border)' }}>
           <div className="flex items-center gap-3">
@@ -81,8 +106,8 @@ export const WhatsNewModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <Sparkles size={20} />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-extrabold mt-heading">ما الجديد في مهدي 4.0</h2>
-              <p className="text-[11px] mt-subtext">دمج تقنيات RTranslator المحلية + جيل جديد من الأدوات</p>
+              <h2 className="text-base sm:text-lg font-extrabold mt-heading">ما الجديد في مهدي 4.1</h2>
+              <p className="text-[11px] mt-subtext">إصلاح شامل للترجمة + محركات أقوى + أدوات وتجاوب جديد</p>
             </div>
           </div>
           <button onClick={onClose} className="mt-icon-btn p-2" aria-label="إغلاق"><X size={20} /></button>

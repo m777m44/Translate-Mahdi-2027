@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   ThemeConfig, 
   TranslationHistoryItem, 
@@ -64,6 +64,10 @@ import {
   NeuralQuality,
 } from './neuralEngine.ts';
 import { recordTranslation } from './usageStats.ts';
+import { ensureTargetScript, beautifyArabic } from './transliterate.ts';
+import { WordBreakdownModal } from './components/WordBreakdownModal.tsx';
+import { BUILTIN_PHRASES, phraseInLanguage } from './phrasebook.ts';
+import { FileDown, ListTree, FlipHorizontal2, Lightbulb, Power } from 'lucide-react';
 import {
   syncHistory,
   getSignedInUser,
@@ -305,6 +309,21 @@ export const App: React.FC = () => {
   const [isDocumentOpen, setIsDocumentOpen] = useState<boolean>(false);
   const [isStatsOpen, setIsStatsOpen] = useState<boolean>(false);
   const [isWhatsNewOpen, setIsWhatsNewOpen] = useState<boolean>(false);
+  const [isBreakdownOpen, setIsBreakdownOpen] = useState<boolean>(false);
+  const [keepScreenOn, setKeepScreenOn] = useState<boolean>(() => {
+    try { return localStorage.getItem('mahdi_keep_screen_on') === 'true'; } catch { return false; }
+  });
+  const [showPhraseOfDay, setShowPhraseOfDay] = useState<boolean>(() => {
+    try { return localStorage.getItem('mahdi_phrase_day_hidden') !== 'true'; } catch { return true; }
+  });
+  const phraseOfDay = useMemo(() => {
+    const dayIndex = Math.floor(Date.now() / 86400000);
+    const phrase = BUILTIN_PHRASES[dayIndex % BUILTIN_PHRASES.length];
+    return {
+      ar: phraseInLanguage(phrase, 'ar'),
+      en: phraseInLanguage(phrase, 'en'),
+    };
+  }, []);
   const [neuralQuality, setNeuralQuality] = useState<NeuralQuality>(() => {
     try {
       return (localStorage.getItem('mahdi_neural_quality') as NeuralQuality) || 'balanced-int8';
@@ -321,6 +340,41 @@ export const App: React.FC = () => {
   useEffect(() => {
     try { localStorage.setItem('mahdi_neural_gpu', String(neuralUseGpu)); } catch {}
   }, [neuralUseGpu]);
+
+  // Keep the Android screen awake during long translation/voice sessions.
+  const wakeLockRef = useRef<any>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const requestLock = async () => {
+      if (!keepScreenOn || !('wakeLock' in navigator)) return;
+      try {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+      } catch { /* permission/visibility issue — non-fatal */ }
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && keepScreenOn) requestLock();
+    };
+    if (keepScreenOn) {
+      requestLock();
+      document.addEventListener('visibilitychange', onVisible);
+    } else {
+      wakeLockRef.current?.release?.().catch(() => {});
+      wakeLockRef.current = null;
+    }
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisible);
+      if (cancelled) wakeLockRef.current?.release?.().catch(() => {});
+    };
+  }, [keepScreenOn]);
+
+  useEffect(() => {
+    try { localStorage.setItem('mahdi_keep_screen_on', String(keepScreenOn)); } catch {}
+  }, [keepScreenOn]);
+
+  useEffect(() => {
+    try { localStorage.setItem('mahdi_phrase_day_hidden', String(!showPhraseOfDay)); } catch {}
+  }, [showPhraseOfDay]);
 
   useEffect(() => {
     if (shouldShowWhatsNew()) {
@@ -370,6 +424,40 @@ export const App: React.FC = () => {
   useEffect(() => () => {
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
   }, []);
+
+  // Reverse translation: swap languages and feed the current result back.
+  const handleReverseTranslate = useCallback(() => {
+    if (!resultText.trim()) {
+      showToast('لا توجد ترجمة لعكس اتجاهها بعد');
+      return;
+    }
+    const newSource = targetLang;
+    const newTarget = sourceLang === 'auto' ? detectLanguageFromText(resultText) : sourceLang;
+    setSourceLang(newSource);
+    setTargetLang(newTarget === newSource ? 'ar' : newTarget);
+    setInputText(resultText);
+    setResultText('');
+    lastTranslatedText.current = '';
+    showToast('تم عكس اتجاه الترجمة 🔄');
+  }, [resultText, sourceLang, targetLang, showToast]);
+
+  const handleDownloadResult = useCallback(() => {
+    if (!resultText.trim()) {
+      showToast('لا يوجد نتيجة لتنزيلها بعد');
+      return;
+    }
+    const content = `${inputText}\n\n${resultText}`;
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mahdi-translation-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+    showToast('تم تنزيل الترجمة كملف نصي ✓');
+  }, [inputText, resultText, showToast]);
 
   // Automatic Language Detection Effect
   useEffect(() => {
@@ -610,6 +698,12 @@ export const App: React.FC = () => {
     [appSettings.privateModeNoHistory, appSettings.historyLimit]
   );
 
+  /** Guarantee fully target-script output with Arabic punctuation polish. */
+  const finalizeTarget = useCallback((t: string, to: string): string => {
+    if (!t) return t;
+    return beautifyArabic(ensureTargetScript(t, to), to);
+  }, []);
+
   /**
    * Unified translation pipeline shared by every v4 tool (WalkieTalkie, P2P,
    * documents, phrasebook): cloud Gemini → on-device neural (NLLB/Marian) →
@@ -632,7 +726,7 @@ export const App: React.FC = () => {
         });
         if (r.translation) {
           recordTranslation({ chars: trimmed.length, from: activeFrom, to, engine: 'online', kind: 'text' });
-          return r.translation;
+          return finalizeTarget(r.translation, to);
         }
       } catch { /* try next engine */ }
     }
@@ -647,7 +741,7 @@ export const App: React.FC = () => {
           });
           if (neural) {
             recordTranslation({ chars: trimmed.length, from: activeFrom, to, engine: 'neural', kind: 'neural' });
-            return neural;
+            return finalizeTarget(neural, to);
           }
         }
       }
@@ -658,11 +752,11 @@ export const App: React.FC = () => {
       dialect: selectedDialect,
     });
     recordTranslation({ chars: trimmed.length, from: activeFrom, to, engine: 'offline', kind: 'text' });
-    return local.translation;
+    return finalizeTarget(local.translation, to);
   }, [
     forceOffline, selectedDomain, selectedTone, selectedDialect,
     appSettings.accuracyLevel, appSettings.preserveFormatting, appSettings.translateNumbers,
-    neuralQuality, neuralUseGpu,
+    neuralQuality, neuralUseGpu, finalizeTarget,
   ]);
 
   /** Try the on-device neural model for the active pair when a model is cached. */
@@ -779,12 +873,13 @@ export const App: React.FC = () => {
         translateNumbers: appSettings.translateNumbers,
       });
       if (isStale()) return;
-      setResultText(result.translation);
+      const safeTranslation = finalizeTarget(result.translation, targetLang);
+      setResultText(safeTranslation);
       setTransliteration(result.transliteration || '');
       setDetectedLangBanner(result.detectedLanguageName || '');
       setMoreTranslations(result.moreTranslations || []);
       setDefinitions(result.definitions || []);
-      cachePut(cacheKey, result.translation);
+      cachePut(cacheKey, safeTranslation);
       if (result.analysis) setAiAnalysis(result.analysis);
       setTranslationEngine('online');
       setError(null);
@@ -792,7 +887,7 @@ export const App: React.FC = () => {
 
       rememberTranslation({
         sourceText: trimmed,
-        translatedText: result.translation,
+        translatedText: safeTranslation,
         sourceLang,
         targetLang,
         mode: 'online',
@@ -804,10 +899,10 @@ export const App: React.FC = () => {
       recordTranslation({ chars: trimmed.length, from: activeFrom, to: targetLang, engine: 'online', kind: 'text' });
 
       if (appSettings.autoCopyOnTranslate) {
-        try { await navigator.clipboard.writeText(result.translation); } catch {}
+        try { await navigator.clipboard.writeText(safeTranslation); } catch {}
       }
       if (appSettings.autoSpeakTarget) {
-        speakText(result.translation, targetLang, ttsSettings);
+        speakText(safeTranslation, targetLang, ttsSettings);
       }
     } catch (err: any) {
       if (isStale()) return;
@@ -1338,6 +1433,16 @@ export const App: React.FC = () => {
             </button>
 
             <button
+              onClick={() => setKeepScreenOn((v) => !v)}
+              className="mt-icon-btn p-2"
+              data-active={keepScreenOn}
+              title={keepScreenOn ? 'إبقاء الشاشة مضاءة: مفعّل' : 'إبقاء الشاشة مضاءة أثناء الاستخدام'}
+              aria-label="إبقاء الشاشة مضاءة"
+            >
+              <Power size={17} />
+            </button>
+
+            <button
               onClick={() => setIsThemeGalleryOpen(true)}
               className="mt-icon-btn p-2"
               title={`مكتبة الثيمات (${themeTotal}+ ثيم)`}
@@ -1415,7 +1520,36 @@ export const App: React.FC = () => {
         </header>
 
         {/* Translation Card Workspace */}
-        <main className="w-full flex flex-col gap-4 flex-1">
+        <main className="w-full flex flex-col gap-3 sm:gap-4 flex-1">
+          {/* Phrase of the day — compact, dismissible daily-learning nudge */}
+          {showPhraseOfDay && (
+            <div
+              className="mt-surface-soft rounded-2xl border px-3.5 py-2.5 flex items-center gap-3 mt-fade-in"
+              style={{ borderColor: 'var(--mt-border)' }}
+            >
+              <div className="p-2 rounded-xl mt-accent-soft shrink-0">
+                <Lightbulb size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-extrabold mt-accent-text mb-0.5">عبارة اليوم</div>
+                <p className="text-xs font-extrabold truncate" dir="rtl">{phraseOfDay.ar}</p>
+                <p className="text-[10px] mt-subtext truncate" dir="ltr">{phraseOfDay.en}</p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => handleSpeak(phraseOfDay.ar, 'ar')} className="mt-icon-btn p-1.5" title="نطق العبارة">
+                  <Volume2 size={14} />
+                </button>
+                <button
+                  onClick={() => { setShowPhraseOfDay(false); showToast('تم إخفاء عبارة اليوم'); }}
+                  className="mt-icon-btn p-1.5"
+                  title="إخفاء"
+                  aria-label="إخفاء عبارة اليوم"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+          )}
           {viewMode === 'advanced' ? (
             <AdvancedTwoBoxLayout
               inputText={inputText}
@@ -1528,6 +1662,52 @@ export const App: React.FC = () => {
             />
           )}
 
+          {/* Result meta bar: counters, engine badge and quick actions */}
+          <div className="mt-surface-soft rounded-2xl border px-3 py-2 flex items-center gap-2 flex-wrap" style={{ borderColor: 'var(--mt-border)' }}>
+            <span className="text-[10px] mt-subtext font-bold whitespace-nowrap">
+              {inputText.trim() ? `${inputText.trim().length} حرف · ${inputText.trim().split(/\s+/).filter(Boolean).length} كلمة` : 'جاهز للترجمة'}
+            </span>
+            {resultText && (
+              <span
+                className="text-[9px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap"
+                style={{
+                  background: translationEngine === 'online'
+                    ? 'color-mix(in srgb, var(--mt-success) 16%, transparent)'
+                    : 'var(--mt-accent-soft)',
+                  color: translationEngine === 'online' ? 'var(--mt-success)' : 'var(--mt-accent)',
+                }}
+              >
+                {translationEngine === 'online' ? 'محرك سحابي' : 'محرك محلي'}
+              </span>
+            )}
+            <div className="flex items-center gap-1 mr-auto">
+              <button
+                onClick={() => setIsBreakdownOpen(true)}
+                disabled={!inputText.trim()}
+                className="mt-btn mt-btn-ghost rounded-xl px-2.5 py-1.5 text-[10px] font-bold flex items-center gap-1"
+                title="تحليل كل كلمة وكيفية ترجمتها"
+              >
+                <ListTree size={13} /> <span className="hidden sm:inline">تحليل الكلمات</span>
+              </button>
+              <button
+                onClick={handleReverseTranslate}
+                disabled={!resultText}
+                className="mt-btn mt-btn-ghost rounded-xl px-2.5 py-1.5 text-[10px] font-bold flex items-center gap-1"
+                title="عكس اتجاه الترجمة"
+              >
+                <FlipHorizontal2 size={13} /> <span className="hidden sm:inline">عكسي</span>
+              </button>
+              <button
+                onClick={handleDownloadResult}
+                disabled={!resultText}
+                className="mt-btn mt-btn-ghost rounded-xl px-2.5 py-1.5 text-[10px] font-bold flex items-center gap-1"
+                title="تنزيل الترجمة ملف نصي"
+              >
+                <FileDown size={13} /> <span className="hidden sm:inline">تنزيل</span>
+              </button>
+            </div>
+          </div>
+
           {/* Swipe Down History Pull Handle Bar (Screenshot 2) */}
           <div 
             onClick={() => setShowHistory(!showHistory)}
@@ -1632,7 +1812,7 @@ export const App: React.FC = () => {
           )}
 
           {/* Floating Bottom Navigation (Screenshots 1 & 2) */}
-          <div className="mt-auto pt-4 pb-2 flex flex-col items-center gap-3 w-full">
+          <div className="mt-auto pt-4 pb-2 mt-safe-bottom-pad flex flex-col items-center gap-3 w-full">
             
             {/* Floating Language Pill Selector */}
             <div className="mt-glass w-full max-w-lg rounded-full px-2 py-1.5 flex items-center justify-between">
@@ -1685,17 +1865,17 @@ export const App: React.FC = () => {
             </div>
 
             {/* The 3 Iconic Action Buttons: Camera, Microphone, Live Conversation */}
-            <div className="flex items-center justify-center gap-8 sm:gap-14 w-full pt-1">
+            <div className="flex items-center justify-center gap-6 sm:gap-14 w-full pt-1">
               {/* 1. Camera OCR */}
               <div className="flex flex-col items-center gap-1.5">
                 <button
                   onClick={() => setIsImageModalOpen(true)}
-                  className="mt-glass mt-icon-btn w-14 h-14 hover:scale-105 active:scale-95"
+                  className="mt-glass mt-icon-btn w-12 h-12 sm:w-14 sm:h-14 hover:scale-105 active:scale-95"
                   title="ترجمة الصور والكاميرا"
                 >
-                  <Camera size={24} />
+                  <Camera size={22} />
                 </button>
-                <span className="text-[11px] font-semibold opacity-80">الكاميرا</span>
+                <span className="text-[10px] sm:text-[11px] font-semibold opacity-80 whitespace-nowrap">الكاميرا</span>
               </div>
 
               {/* 2. Large Central Microphone */}
@@ -1706,17 +1886,17 @@ export const App: React.FC = () => {
                     isListening ? 'mt-listening' : 'mt-glass'
                   }`}
                   style={{
-                    width: '4.5rem',
-                    height: '4.5rem',
+                    width: 'clamp(3.75rem, 17vw, 4.5rem)',
+                    height: 'clamp(3.75rem, 17vw, 4.5rem)',
                     background: isListening ? 'var(--mt-danger)' : undefined,
                     color: isListening ? '#fff' : 'var(--mt-accent)',
                     borderColor: isListening ? 'var(--mt-danger)' : undefined,
                   }}
                   title={isListening ? 'جاري الاستماع... انقر للإيقاف' : 'التحدث بالصوت'}
                 >
-                  {isListening ? <MicOff size={30} /> : <Mic size={30} />}
+                  {isListening ? <MicOff size={28} /> : <Mic size={28} />}
                 </button>
-                <span className="text-[11px] font-bold opacity-80">
+                <span className="text-[10px] sm:text-[11px] font-bold opacity-80 whitespace-nowrap">
                   {isListening ? 'جاري الاستماع...' : 'صوت'}
                 </span>
               </div>
@@ -1725,12 +1905,12 @@ export const App: React.FC = () => {
               <div className="flex flex-col items-center gap-1.5">
                 <button
                   onClick={() => setIsDualConversationModalOpen(true)}
-                  className="mt-glass mt-icon-btn w-14 h-14 hover:scale-105 active:scale-95"
+                  className="mt-glass mt-icon-btn w-12 h-12 sm:w-14 sm:h-14 hover:scale-105 active:scale-95"
                   title="الترجمة المباشرة والمحادثة الثنائية"
                 >
-                  <Users size={24} />
+                  <Users size={22} />
                 </button>
-                <span className="text-[11px] font-semibold opacity-80">الترجمة المباشرة</span>
+                <span className="text-[10px] sm:text-[11px] font-semibold opacity-80 whitespace-nowrap">الترجمة المباشرة</span>
               </div>
             </div>
           </div>
@@ -1981,6 +2161,7 @@ export const App: React.FC = () => {
             case 'starred': setIsStarredModalOpen(true); break;
             case 'themes': setIsThemeGalleryOpen(true); break;
             case 'settings': setIsProSettingsOpen(true); break;
+            case 'breakdown': setIsBreakdownOpen(true); break;
           }
         }}
       />
@@ -2043,6 +2224,17 @@ export const App: React.FC = () => {
         isOpen={isWhatsNewOpen}
         onClose={() => setIsWhatsNewOpen(false)}
         theme={currentTheme}
+      />
+
+      <WordBreakdownModal
+        isOpen={isBreakdownOpen}
+        onClose={() => setIsBreakdownOpen(false)}
+        theme={currentTheme}
+        text={inputText}
+        from={sourceLang === 'auto' ? detectLanguageFromText(inputText) : sourceLang}
+        to={targetLang}
+        dialect={selectedDialect}
+        onSpeak={handleSpeak}
       />
     </div>
   );
