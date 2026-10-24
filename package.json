@@ -10,7 +10,7 @@
     "lint": "tsc --noEmit",
     "icons": "node scripts/generate-icons.mjs",
     "cap:add:android": "cap add android",
-    "cap:sync": "npm run build && cap sync android",
+    "cap:sync": "npm run build && node -e \"require('fs').rmSync('dist/downloads',{recursive:true,force:true})\" && cap sync android",
     "apk:debug": "npm run cap:sync && cd android && ./gradlew assembleDebug",
     "apk:release": "npm run cap:sync && cd android && ./gradlew assembleRelease",
     "verify:themes": "tsx scripts/verify-themes.ts",

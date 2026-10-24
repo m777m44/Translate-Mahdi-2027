@@ -53,6 +53,10 @@ jobs:
       - name: Build web assets
         run: npm run build
 
+      # The website-only APK payload must not be nested inside the app itself.
+      - name: Strip website-only download payload from app bundle
+        run: rm -rf dist/downloads
+
       - name: Sync Capacitor (copy dist into Android shell)
         run: npx cap sync android
 

@@ -118,7 +118,7 @@ npm run dev                    # http://localhost:3000
 
 **محلياً:**
 ```bash
-npm run build && npx cap sync android
+npm run cap:sync   # يبني الويب ويستثني ملف تنزيل الموقع ثم يزامن غلاف Android
 cd android && ./gradlew assembleDebug
 # android/app/build/outputs/apk/debug/app-debug.apk
 ```
