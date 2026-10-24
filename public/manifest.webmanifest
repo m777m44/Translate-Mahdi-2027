@@ -1,5 +1,5 @@
 {
-  "name": "Mahdi Translator Pro 4.1 — مترجم مهدي",
+  "name": "Mahdi Translator Pro 4.1.1 — مترجم مهدي",
   "short_name": "Mahdi Translate",
   "description": "مترجم احترافي بذكاء اصطناعي على الجهاز (NLLB وWhisper) ووضع لاسلكي ومحادثة مشفّرة بين جهازين وترجمة مستندات و1544 ثيم",
   "lang": "ar",
@@ -75,5 +75,5 @@
       "label": "Mahdi Translate Pro"
     }
   ],
-  "version": "4.1.0"
+  "version": "4.1.1"
 }

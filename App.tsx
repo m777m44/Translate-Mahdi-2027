@@ -821,6 +821,7 @@ export const App: React.FC = () => {
               dialect: selectedDialect
             });
         if (isStale()) return;
+        const safeOffline = finalizeTarget(offlineRes.translation, targetLang);
         recordTranslation({
           chars: trimmed.length,
           from: activeFrom,
@@ -828,18 +829,18 @@ export const App: React.FC = () => {
           engine: neuralOut ? 'neural' : 'offline',
           kind: neuralOut ? 'neural' : 'text',
         });
-        setResultText(offlineRes.translation);
+        setResultText(safeOffline);
         setTransliteration(offlineRes.transliteration || '');
         setDetectedLangBanner(offlineRes.detectedLanguageName || '');
         setMoreTranslations(offlineRes.moreTranslations || []);
         setDefinitions(offlineRes.definitions || []);
-        cachePut(cacheKey, offlineRes.translation);
+        cachePut(cacheKey, safeOffline);
         setTranslationEngine('offline');
         lastTranslatedText.current = trimmed;
 
         rememberTranslation({
           sourceText: trimmed,
-          translatedText: offlineRes.translation,
+          translatedText: safeOffline,
           sourceLang,
           targetLang,
           mode: 'offline',
@@ -850,7 +851,7 @@ export const App: React.FC = () => {
         });
 
         if (appSettings.autoSpeakTarget) {
-          speakText(offlineRes.translation, targetLang, ttsSettings);
+          speakText(safeOffline, targetLang, ttsSettings);
         }
       } catch (err: any) {
         if (!isStale()) setError('تعذر إتمام الترجمة المحلية.');
@@ -923,12 +924,13 @@ export const App: React.FC = () => {
               dialect: selectedDialect
             });
         if (isStale()) return;
-        setResultText(offlineFallback.translation);
+        const safeFallback = finalizeTarget(offlineFallback.translation, targetLang);
+        setResultText(safeFallback);
         setTransliteration(offlineFallback.transliteration || '');
         setDetectedLangBanner(offlineFallback.detectedLanguageName || '');
         setMoreTranslations(offlineFallback.moreTranslations || []);
         setDefinitions(offlineFallback.definitions || []);
-        cachePut(cacheKey, offlineFallback.translation);
+        cachePut(cacheKey, safeFallback);
         setTranslationEngine('offline');
         setError(null); // Clear error because translation succeeded via offline engine
         lastTranslatedText.current = trimmed;
@@ -943,7 +945,7 @@ export const App: React.FC = () => {
 
         rememberTranslation({
           sourceText: trimmed,
-          translatedText: offlineFallback.translation,
+          translatedText: safeFallback,
           sourceLang,
           targetLang,
           mode: 'offline',

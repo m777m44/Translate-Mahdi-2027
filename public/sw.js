@@ -7,7 +7,7 @@
  *    model caching itself, avoiding duplicate multi-hundred-MB storage
  *  - other cross-origin (fonts, Tailwind CDN): network first, cache fallback
  */
-const CACHE = 'mahdi-translate-v4-1';
+const CACHE = 'mahdi-translate-v4-1-1';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon.svg'];
 const MODEL_HOSTS = ['huggingface.co', 'hf.co', 'hf-mirror.com', 'cdn-lfs'];
 
