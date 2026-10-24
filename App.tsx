@@ -48,6 +48,22 @@ import { GoogleTranslateResultView } from './components/GoogleTranslateResultVie
 import { AdvancedTwoBoxLayout } from './components/AdvancedTwoBoxLayout.tsx';
 import { GoogleAuthModal, GoogleUser } from './components/GoogleAuthModal.tsx';
 import { InstallAppButton } from './components/InstallAppButton.tsx';
+import { NeuralModelsModal } from './components/NeuralModelsModal.tsx';
+import { WalkieTalkieModal } from './components/WalkieTalkieModal.tsx';
+import { P2PConversationModal } from './components/P2PConversationModal.tsx';
+import { PhrasebookModal } from './components/PhrasebookModal.tsx';
+import { DocumentTranslateModal } from './components/DocumentTranslateModal.tsx';
+import { StatsModal } from './components/StatsModal.tsx';
+import { ToolsHubModal, ToolId } from './components/ToolsHubModal.tsx';
+import { WhatsNewModal, shouldShowWhatsNew } from './components/WhatsNewModal.tsx';
+import {
+  translateNeural,
+  isModelDownloaded,
+  resolveTranslationModel,
+  supportsNeuralPair,
+  NeuralQuality,
+} from './neuralEngine.ts';
+import { recordTranslation } from './usageStats.ts';
 import {
   syncHistory,
   getSignedInUser,
@@ -100,7 +116,8 @@ import {
   User,
   Clipboard,
   Pen,
-  MoreVertical
+  MoreVertical,
+  LayoutGrid
 } from 'lucide-react';
 
 declare global {
@@ -278,6 +295,39 @@ export const App: React.FC = () => {
     }
   });
   const [isGoogleAuthOpen, setIsGoogleAuthOpen] = useState<boolean>(false);
+
+  // ── v4.0 RTranslator-grade on-device AI suite ─────────────────────────────
+  const [isToolsHubOpen, setIsToolsHubOpen] = useState<boolean>(false);
+  const [isNeuralModelsOpen, setIsNeuralModelsOpen] = useState<boolean>(false);
+  const [isWalkieOpen, setIsWalkieOpen] = useState<boolean>(false);
+  const [isP2pOpen, setIsP2pOpen] = useState<boolean>(false);
+  const [isPhrasebookOpen, setIsPhrasebookOpen] = useState<boolean>(false);
+  const [isDocumentOpen, setIsDocumentOpen] = useState<boolean>(false);
+  const [isStatsOpen, setIsStatsOpen] = useState<boolean>(false);
+  const [isWhatsNewOpen, setIsWhatsNewOpen] = useState<boolean>(false);
+  const [neuralQuality, setNeuralQuality] = useState<NeuralQuality>(() => {
+    try {
+      return (localStorage.getItem('mahdi_neural_quality') as NeuralQuality) || 'balanced-int8';
+    } catch { return 'balanced-int8'; }
+  });
+  const [neuralUseGpu, setNeuralUseGpu] = useState<boolean>(() => {
+    try { return localStorage.getItem('mahdi_neural_gpu') !== 'false'; } catch { return true; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('mahdi_neural_quality', neuralQuality); } catch {}
+  }, [neuralQuality]);
+
+  useEffect(() => {
+    try { localStorage.setItem('mahdi_neural_gpu', String(neuralUseGpu)); } catch {}
+  }, [neuralUseGpu]);
+
+  useEffect(() => {
+    if (shouldShowWhatsNew()) {
+      const t = window.setTimeout(() => setIsWhatsNewOpen(true), 900);
+      return () => window.clearTimeout(t);
+    }
+  }, []);
 
   // View Mode: 'classic' (Single screen stream) vs 'advanced' (Dual box workspace)
   const [viewMode, setViewMode] = useState<'classic' | 'advanced'>(() => {
@@ -560,6 +610,73 @@ export const App: React.FC = () => {
     [appSettings.privateModeNoHistory, appSettings.historyLimit]
   );
 
+  /**
+   * Unified translation pipeline shared by every v4 tool (WalkieTalkie, P2P,
+   * documents, phrasebook): cloud Gemini → on-device neural (NLLB/Marian) →
+   * bundled offline dictionary. Never throws — always returns a best effort.
+   */
+  const universalTranslate = useCallback(async (text: string, from: string, to: string): Promise<string> => {
+    const trimmed = text.trim();
+    if (!trimmed) return '';
+    const activeFrom = from === 'auto' ? detectLanguageFromText(trimmed) : from;
+
+    if (!forceOffline && navigator.onLine) {
+      try {
+        const r = await translateText(trimmed, from, to, {
+          domain: selectedDomain,
+          tone: selectedTone,
+          dialect: selectedDialect,
+          accuracy: appSettings.accuracyLevel,
+          preserveFormatting: appSettings.preserveFormatting,
+          translateNumbers: appSettings.translateNumbers,
+        });
+        if (r.translation) {
+          recordTranslation({ chars: trimmed.length, from: activeFrom, to, engine: 'online', kind: 'text' });
+          return r.translation;
+        }
+      } catch { /* try next engine */ }
+    }
+
+    try {
+      if (supportsNeuralPair(activeFrom, to)) {
+        const info = resolveTranslationModel(activeFrom, to);
+        if (await isModelDownloaded(info.id)) {
+          const neural = await translateNeural(trimmed, activeFrom, to, {
+            quality: neuralQuality,
+            useGpu: neuralUseGpu,
+          });
+          if (neural) {
+            recordTranslation({ chars: trimmed.length, from: activeFrom, to, engine: 'neural', kind: 'neural' });
+            return neural;
+          }
+        }
+      }
+    } catch (e) { /* fall through to dictionary */ }
+
+    const local = translateOffline(trimmed, from, to, {
+      domain: selectedDomain,
+      dialect: selectedDialect,
+    });
+    recordTranslation({ chars: trimmed.length, from: activeFrom, to, engine: 'offline', kind: 'text' });
+    return local.translation;
+  }, [
+    forceOffline, selectedDomain, selectedTone, selectedDialect,
+    appSettings.accuracyLevel, appSettings.preserveFormatting, appSettings.translateNumbers,
+    neuralQuality, neuralUseGpu,
+  ]);
+
+  /** Try the on-device neural model for the active pair when a model is cached. */
+  const tryNeuralTranslation = useCallback(async (text: string, from: string, to: string): Promise<string | null> => {
+    try {
+      if (!supportsNeuralPair(from, to)) return null;
+      const info = resolveTranslationModel(from, to);
+      if (!(await isModelDownloaded(info.id))) return null;
+      return await translateNeural(text, from, to, { quality: neuralQuality, useGpu: neuralUseGpu });
+    } catch {
+      return null;
+    }
+  }, [neuralQuality, neuralUseGpu]);
+
   // Translation Handler (Online AI + Local Offline Engine + Auto Detect)
   const handleTranslate = useCallback(async (text: string) => {
     const trimmed = text.trim();
@@ -594,11 +711,29 @@ export const App: React.FC = () => {
 
     if (shouldRunOffline) {
       try {
-        const offlineRes = translateOffline(trimmed, sourceLang, targetLang, {
-          domain: selectedDomain,
-          dialect: selectedDialect
-        });
+        // Prefer a downloaded on-device neural model (NLLB/Marian), then the
+        // instant bundled dictionary as a zero-download fallback.
+        const neuralOut = await tryNeuralTranslation(trimmed, activeFrom, targetLang);
+        const offlineRes = neuralOut
+          ? {
+              translation: neuralOut,
+              transliteration: '',
+              detectedLanguageName: '',
+              moreTranslations: [],
+              definitions: [],
+            }
+          : translateOffline(trimmed, sourceLang, targetLang, {
+              domain: selectedDomain,
+              dialect: selectedDialect
+            });
         if (isStale()) return;
+        recordTranslation({
+          chars: trimmed.length,
+          from: activeFrom,
+          to: targetLang,
+          engine: neuralOut ? 'neural' : 'offline',
+          kind: neuralOut ? 'neural' : 'text',
+        });
         setResultText(offlineRes.translation);
         setTransliteration(offlineRes.transliteration || '');
         setDetectedLangBanner(offlineRes.detectedLanguageName || '');
@@ -666,6 +801,7 @@ export const App: React.FC = () => {
         dialect: selectedDialect,
         detectedLang: sourceLang === 'auto' ? activeFrom : undefined,
       });
+      recordTranslation({ chars: trimmed.length, from: activeFrom, to: targetLang, engine: 'online', kind: 'text' });
 
       if (appSettings.autoCopyOnTranslate) {
         try { await navigator.clipboard.writeText(result.translation); } catch {}
@@ -675,13 +811,22 @@ export const App: React.FC = () => {
       }
     } catch (err: any) {
       if (isStale()) return;
-      console.warn('Online translation temporary issue, switching to local offline engine:', err?.message || err);
-      // Fallback to offline engine seamlessly!
+      console.warn('Online translation temporary issue, switching to on-device neural/offline engine:', err?.message || err);
+      // Fallback chain: on-device neural model → bundled offline dictionary.
       try {
-        const offlineFallback = translateOffline(trimmed, sourceLang, targetLang, {
-          domain: selectedDomain,
-          dialect: selectedDialect
-        });
+        const neuralFallback = await tryNeuralTranslation(trimmed, activeFrom, targetLang);
+        const offlineFallback = neuralFallback
+          ? {
+              translation: neuralFallback,
+              transliteration: '',
+              detectedLanguageName: '',
+              moreTranslations: [],
+              definitions: [],
+            }
+          : translateOffline(trimmed, sourceLang, targetLang, {
+              domain: selectedDomain,
+              dialect: selectedDialect
+            });
         if (isStale()) return;
         setResultText(offlineFallback.translation);
         setTransliteration(offlineFallback.transliteration || '');
@@ -692,7 +837,14 @@ export const App: React.FC = () => {
         setTranslationEngine('offline');
         setError(null); // Clear error because translation succeeded via offline engine
         lastTranslatedText.current = trimmed;
-        showToast('تمت الترجمة بالمحرك المحلي الفوري ⚡');
+        showToast(neuralFallback ? 'تمت الترجمة بالذكاء الاصطناعي على جهازك 🧠⚡' : 'تمت الترجمة بالمحرك المحلي الفوري ⚡');
+        recordTranslation({
+          chars: trimmed.length,
+          from: activeFrom,
+          to: targetLang,
+          engine: neuralFallback ? 'neural' : 'offline',
+          kind: neuralFallback ? 'neural' : 'text',
+        });
 
         rememberTranslation({
           sourceText: trimmed,
@@ -722,6 +874,7 @@ export const App: React.FC = () => {
     rememberTranslation,
     showToast,
     ttsSettings,
+    tryNeuralTranslation,
     appSettings.accuracyLevel,
     appSettings.defaultEngine,
     appSettings.preserveFormatting,
@@ -1167,6 +1320,21 @@ export const App: React.FC = () => {
                   <span className="text-[11px] font-bold hidden sm:inline opacity-80">تسجيل الدخول</span>
                 </div>
               )}
+            </button>
+
+            <button
+              onClick={() => setIsToolsHubOpen(true)}
+              className="mt-icon-btn p-2 relative"
+              title="مركز الأدوات — كل الميزات في مكان واحد"
+              aria-label="مركز الأدوات"
+            >
+              <LayoutGrid size={17} />
+              <span
+                className="absolute -top-0.5 -left-0.5 text-[7px] font-extrabold px-1 rounded-full"
+                style={{ background: 'var(--mt-primary-gradient)', color: 'var(--mt-on-primary)' }}
+              >
+                4
+              </span>
             </button>
 
             <button
@@ -1790,6 +1958,91 @@ export const App: React.FC = () => {
         onLogout={handleGoogleLogout}
         starredCount={favorites.length}
         historyCount={history.length}
+      />
+
+      {/* ── v4.0 RTranslator-grade on-device AI suite ──────────────────── */}
+      <ToolsHubModal
+        isOpen={isToolsHubOpen}
+        onClose={() => setIsToolsHubOpen(false)}
+        theme={currentTheme}
+        onOpenTool={(id: ToolId) => {
+          switch (id) {
+            case 'image': setIsImageModalOpen(true); break;
+            case 'dual': setIsDualConversationModalOpen(true); break;
+            case 'walkie': setIsWalkieOpen(true); break;
+            case 'p2p': setIsP2pOpen(true); break;
+            case 'neural': setIsNeuralModelsOpen(true); break;
+            case 'document': setIsDocumentOpen(true); break;
+            case 'phrasebook': setIsPhrasebookOpen(true); break;
+            case 'stats': setIsStatsOpen(true); break;
+            case 'packs': setIsOfflinePacksModalOpen(true); break;
+            case 'floating': setIsFloatingOpen(true); break;
+            case 'handwriting': setIsHandwritingModalOpen(true); break;
+            case 'starred': setIsStarredModalOpen(true); break;
+            case 'themes': setIsThemeGalleryOpen(true); break;
+            case 'settings': setIsProSettingsOpen(true); break;
+          }
+        }}
+      />
+
+      <NeuralModelsModal
+        isOpen={isNeuralModelsOpen}
+        onClose={() => setIsNeuralModelsOpen(false)}
+        theme={currentTheme}
+        quality={neuralQuality}
+        onQualityChange={setNeuralQuality}
+        useGpu={neuralUseGpu}
+        onUseGpuChange={setNeuralUseGpu}
+        onToast={showToast}
+      />
+
+      <WalkieTalkieModal
+        isOpen={isWalkieOpen}
+        onClose={() => setIsWalkieOpen(false)}
+        theme={currentTheme}
+        languages={LANGUAGES}
+        translateFn={universalTranslate}
+        onSpeak={handleSpeak}
+      />
+
+      <P2PConversationModal
+        isOpen={isP2pOpen}
+        onClose={() => setIsP2pOpen(false)}
+        theme={currentTheme}
+        languages={LANGUAGES}
+        translateFn={universalTranslate}
+        onSpeak={handleSpeak}
+      />
+
+      <PhrasebookModal
+        isOpen={isPhrasebookOpen}
+        onClose={() => setIsPhrasebookOpen(false)}
+        theme={currentTheme}
+        languages={LANGUAGES}
+        onSpeak={handleSpeak}
+        translateFn={universalTranslate}
+        onToast={showToast}
+      />
+
+      <DocumentTranslateModal
+        isOpen={isDocumentOpen}
+        onClose={() => setIsDocumentOpen(false)}
+        theme={currentTheme}
+        languages={LANGUAGES}
+        translateFn={universalTranslate}
+        onToast={showToast}
+      />
+
+      <StatsModal
+        isOpen={isStatsOpen}
+        onClose={() => setIsStatsOpen(false)}
+        theme={currentTheme}
+      />
+
+      <WhatsNewModal
+        isOpen={isWhatsNewOpen}
+        onClose={() => setIsWhatsNewOpen(false)}
+        theme={currentTheme}
       />
     </div>
   );

@@ -1,12 +1,17 @@
-# 🌐 مهدي — Mahdi Translator Pro
+# 🌐 مهدي 4.0 — Mahdi Translator Pro
 
-> تطبيق ترجمة احترافي ذكي وشامل — ترجمة فورية أثناء الكتابة، أكثر من **1544 ثيم**،
-> ترجمة صوتية وصور ومحادثة، حزم لغات تعمل بدون إنترنت، مزامنة سحابية مربوطة بالحساب،
-> وتطبيق Android قابل للتثبيت (APK / PWA).
+> تطبيق ترجمة احترافي ذكي وشامل — **ذكاء اصطناعي يعمل بالكامل على الجهاز**
+> (نماذج NLLB و Bergamot/Marian و Whisper)، وضعا **اللاسلكي WalkieTalkie**
+> و**المحادثة المشفّرة بين جهازين**، ترجمة مستندات وترجمات مرئية، بنك عبارات
+> وبطاقات مراجعة، أكثر من **1544 ثيم**، حزم أوفلاين، مزامنة سحابية، وتطبيق
+> Android قابل للتثبيت (APK / PWA).
 
-**A professional, intelligent, all-in-one translator** — instant translation while you
-type, **1544 themes**, voice / image / conversation translation, offline language packs,
-account-linked cloud sync (Firestore), and an installable Android app (APK / PWA).
+**A professional all-in-one translator with RTranslator-grade on-device AI** —
+local NLLB / Marian-Bergamot / Whisper inference (Transformers.js + ONNX
+Runtime Web, WebGPU/WASM), WalkieTalkie dual-language mode, encrypted WebRTC
+peer-to-peer conversation, document & subtitle translation, an offline
+phrasebook with Leitner flashcards, 1544 themes, cloud sync, and an installable
+Android app (APK / PWA).
 
 ---
 
@@ -16,131 +21,120 @@ account-linked cloud sync (Firestore), and an installable Android app (APK / PWA
 > هذا المشروع وكل محتوياته (الكود، الثيمات، الشعارات، الأيقونات، التسمية) ملكية فكرية
 > بإسم **MAHDI**. يُمنع نسخ أو إعادة نشر أو بيع أي جزء منه دون إذن كتابي صريح.
 >
-> **All rights reserved © 2027 — MAHDI.** This project and all of its contents (code,
-> themes, logos, icons, naming) are the intellectual property of **MAHDI**. No part may
-> be copied, republished, or sold without explicit written permission.
+> **All rights reserved © 2027 — MAHDI.** No part may be copied, republished, or
+> sold without explicit written permission.
+
+---
+
+## 🆗 ما الجديد في الإصدار 4.0 / What's new in v4.0
+
+دمج فلسفة وتقنيات مشروع [RTranslator](https://github.com/niedev/RTranslator)
+(الترجمة الفورية المحلية بالكامل) ضمن بنية الويب/Capacitor، دون نسخ أي كود منه:
+
+| تقنية RTranslator | التنفيذ في مهدي 4.0 |
+|---|---|
+| نموذج Meta NLLB محلي | `neuralEngine.ts` عبر Transformers.js + ONNX Runtime Web (`Xenova/nllb-200-distilled-600M`) |
+| نماذج Mozilla Bergamot (v3.0) | نماذج Helsinki Opus-MT لكل زوج لغوي (خفيفة وسريعة) |
+| OpenAI Whisper للتعرّف الصوتي | Whisper Tiny/Base محلي على الجهاز |
+| كشف اللغة FastText/Lingua | `langId.ts` — معرّف ثلاثي الحروف (trigram) يعمل أوفلاين |
+| وضع WalkieTalkie (هاتف واحد، لغتان) | `walkieTalkieEngine.ts` + `WalkieTalkieModal` — استمع ← ترجم ← نطق ← استمع تلقائياً |
+| وضع Conversation بين هاتفين | `p2pSession.ts` + `P2PConversationModal` — WebRTC مشفّر بتبادل كود QR |
+| تنزيل النماذج عند أول تشغيل | `NeuralModelsModal` — تنزيل/حذف بقياس جودة INT4/INT8/FP32 وتسريع WebGPU |
+| تكامل Tatoeba والقواميس | `phrasebook.ts` — 56 عبارة × 8 لغات + بطاقات Leitner |
+| تقنية Beam Search | خيارات `num_beams` ودقات أوزان متعددة في الاستدعاءات |
+
+### مميزات جديدة إضافية / Brand-new extras
+- 📄 **ترجمة المستندات**: TXT / Markdown / SRT / VTT مع الحفاظ على توقيتات الترجمة المرئية.
+- 📊 **لوحة إحصائيات**: الإجماليات، سلسلة الأيام، أكثر الأزواج والمحركات (محلية 100%).
+- 🧭 **مركز أدوات** موحّد يجمع كل القداسات في واجهة واحدة أنيقة.
+- 🪞 مرآة تنزيل نماذج بديلة للمناطق المحجوبة (مثل `hf-mirror.com`).
+- 🪟 نافذة "ما الجديد" عند أول تشغيل + شارات إصدار في الواجهة.
 
 ---
 
 ## ✨ المميزات / Features
 
-### ترجمة فورية ودقيقة / Instant, accurate translation
-- **ترجمة لحظية أثناء الكتابة** (بدون زر) مع محرّك عصبي (Gemini) ومحرّك محلي احتياطي.
-- **ترجمة أونلاين بدون مفتاح:** إذا لم يتوفر Gemini يجرّب الخادم تلقائياً محرّكات مجانية
-  (MyMemory ثم LibreTranslate) فتعمل الترجمة عبر الإنترنت حتى بدون أي مفاتيح.
-- **محرّك أوفلاين ذكي:** مطابقة عبارات كاملة، تحويل الأرقام للصيغة المحلية (٠-٩)،
-  الحفاظ على علامات الترقيم، وقاموس واسع + لهجات.
-- **كشف تلقائي** للغة المصدر مع عرض اسم اللغة المكتشفة.
-- **مطابقة عبارات كاملة** (وليس كلمة-بكلمة) في المحرك المحلي: الجمل الكاملة تُترجم،
-  وليس كلمة واحدة فقط.
-- دعم **اللهجات** (عراقي، مصري، شامي، مغربي، خليجي) و**المجالات** (طبي، قانوني، تقني،
-  ديني) و**النبرة** (رسمي، ودّود…).
-- **100+ لغة** للاختيار، مع تبديل فوري للاتجاه (RTL/LTR).
+### 🧠 ذكاء اصطناعي على الجهاز / On-device AI
+- **ترجمة عصبية محلية بالكامل** بدون إنترنت ولا مفاتيح: NLLB-200 (200+ لغة) أو
+  نماذج Opus-MT الخفيفة لكل زوج لغوي.
+- **تعرّف كلام Whisper** محلي، مع تسريع **WebGPU/NPU** عند توفره.
+- النماذج تُخزَّن في ذاكرة التطبيق (Cache API) وتُدار من واجهة واحدة مع تقدّم التنزيل.
+- سلسلة محركات ذكية: سحابي Gemini ← النموذج المحلي ← القاموس الأوفلاين الفوري.
 
-### واجهة بمئات الثيمات / 1544-theme UI
-- **1544 ثيم** موزعة على 16 فئة، تُطبَّق فوراً على **كل** أجزاء التطبيق.
-- وضع **زجاجي شفاف** للوضع الكلاسيكي، وتحكم كامل بالتباين والحركة والتوهج والتكبير.
-- مكتبة ثيمات قابلة للبحث والمعاينة (`Ctrl/Cmd + K`).
+### 🎙️ أوضاع محادثة متقدمة / Conversation modes
+- **WalkieTalkie**: هاتف واحد يستمع للغتين معاً، يكشف اللغة تلقائياً، يترجم وينطق
+  ثم يعود للاستماع — مع تحكم يدوي (اضغط للتحدث).
+- **P2P بين جهازين**: اقتران عبر رمز QR/كود نصي فوق قناة WebRTC مشفّرة، كل طرف
+  يترجم الرسائل على جهازه.
+- **المحادثة الثنائية الكلاسيكية** صوت-إلى-صوت بين متحدثين.
 
-### أدوات متقدمة / Advanced tools
-- 🎙️ **ترجمة صوتية** حيّة (تعرّف كلام مستمر) + **نطق** الترجمة (TTS).
-- 📷 **ترجمة الصور** (OCR) وإدراج النص المترجم.
-- ✍️ **رسم/كتابة يدوية** لإدخال النص.
-- 💬 **وضع المحادثة** ثنائي اللغة.
-- ⭐ **المفضلة** وسجل ترجمات كامل قابل للبحث والحذف.
-- 🪟 **نافذة ترجمة عائمة** حرة: تُسحب من أي مكان، تغيير حجمها من **كل الحواف والزوايا
-  الثماني**، تصغير/تكبير/إغلاق، وتحفظ موضعها وحجمها.
+### 📷 أدوات النص والصوت والمستندات
+- ترجمة فورية أثناء الكتابة، كشف تلقائي للغة، ترجمة صور (OCR)، كتابة يدوية،
+  نطق TTS، نافذة ترجمة عائمة، مفضلة وسجل كامل.
+- ترجمة ملفات كاملة مع تصديرها جاهزة، وبنك عبارات سفر وطوارئ بثماني لغات.
 
-### يعمل بدون إنترنت / Offline
-- محرّك محلي غني (قواميس + عبارات + لهجات) يعمل فوراً بدون اتصال.
-- حزم لغات قابلة للتنزيل (`offlinePacksManager`).
-- تطبيق PWA يعمل Offline عبر Service Worker.
+### 🎨 واجهة بـ 1544 ثيم
+- 1544 ثيم في 16 فئة تُطبَّق فوراً على كل التطبيق، وضع زجاجي، تباين وحركة وتكبير.
 
-### مزامنة سحابية / Cloud sync (Firestore)
-- تسجيل دخول **Google حقيقي** عبر Firebase Auth.
-- نسخ احتياطي لسجل الترجمات والمفضلة في **Firestore** مربوط بحسابك
-  (`users/{uid}/history`) ليتوفر عبر كل أجهزتك.
-- دمج ثنائي الاتجاه (الأحدث يفوز) وقواعد أمان تمنع وصول أي مستخدم لبيانات غير بياناته.
-- وضع **محلي تلقائي** أنيق إذا لم تُضبط مفاتيح Firebase (لا ينكسر التطبيق أبداً).
-
-### تطبيق Android / Installable app
-- **PWA** قابل للتثبيت من المتصفح (يعمل ملء الشاشة ويختفي زر التثبيت تلقائياً).
-- غلاف **Capacitor** أصلي يبني **APK** حقيقي متوافق مع Android 7.0+ (يغطي Xiaomi /
-  Poco / Huawei / Samsung / Oppo / Vivo وعموم أجهزة العالم).
-- زر «تحميل APK / تثبيت» يختفي تلقائياً عند التشغيل كتطبيق مثبّت.
+### ☁️ وأكثر
+- PWA يعمل أوفلاين + Service Worker ذكي (يتجاوز تخزين النماذج المزدوج).
+- مزامنة سحابية عبر Firestore مربوطة بحساب Google، ووضع محلي أنيق بلا مفاتيح.
+- غلاف Capacitor 8 يبني **APK حقيقياً** (Android 7.0+).
 
 ---
 
 ## 🚀 التشغيل / Getting started
 
 ```bash
-npm install
-cp .env.example .env      # ضع GEMINI_API_KEY ومفاتيح Firebase (اختياري)
-npm run dev               # http://localhost:3000
-curl localhost:3000/api/health   # {"status":"ok",...}
+npm install --ignore-scripts   # onnxruntime-node postinstall غير لازم للمتصفح
+npm rebuild esbuild
+cp .env.example .env           # مفاتيح Gemini/Firebase اختيارية
+npm run dev                    # http://localhost:3000
 ```
 
-التطبيق يعمل **بدون** أي مفاتيح (يعود للمحرك المحلي). المفاتيح تفعّل الترجمة العصبية
-والمزامنة السحابية فقط.
+التطبيق يعمل **بدون** أي مفاتيح. المفاتيح تفعّل الترجمة السحابية والمزامنة فقط؛
+أما النماذج العصبية فتُنزَّل من داخل التطبيق عند الطلب.
 
-### أوامر التطوير / Scripts
+### أوامر / Scripts
 
 | الأمر | الوصف |
 |---|---|
-| `npm run dev` | تشغيل خادم التطوير (يحمّل `.env` تلقائياً إن وجد) |
-| `npm run build` | بناء الواجهة + الخادم للإنتاج |
-| `npm run start` | تشغيل النسخة المبنية |
-| `npm run verify` | فحوصات الثيمات + فحص عرض التطبيق (SSR) |
-| `npm run lint` / `npm run check` | فحص الأنواع / كل الفحوصات |
-| `npm run icons` | توليد أيقونات PNG من SVG |
+| `npm run dev` | تشغيل خادم التطوير |
+| `npm run build` | بناء الواجهة (يتضمن حزمة WASM العصبية) + الخادم |
+| `npm run lint` | فحص الأنواع TypeScript |
+| `npm run verify` | فحوصات الثيمات + عرض التطبيق |
+| `npx tsx scripts/test-v4-logic.ts` | اختبارات منطق v4 (اللغة، المستندات، البطاقات، الإحصائيات) |
 | `npm run cap:sync` | بناء الويب ونسخه لغلاف Android |
-| `npm run apk:debug` / `apk:release` | بناء APK (يتطلب Android SDK) |
+| `npm run apk:debug` | بناء APK محلياً (يتطلب Android SDK + JDK 21) |
 
 ---
 
-## 📱 بناء APK حقيقي / Building the real APK
+## 📱 بناء APK / Building the APK
 
-الغلاف الأصلي موجود في مجلد `android/` (Capacitor 8، `minSdk 24` ≈ Android 7.0+).
+**الطريقة الأسهل — GitHub Actions:** ادفع الفرع فينفّذ `.github/workflows/build-apk.yml`
+البناء ويرفع `mahdi-translate.apk` كـ Artifact وينشره في `public/downloads/`.
+ولإنشاء إصدار رسمي: ادفع وسماً `v*` فينفّذ `release-apk.yml` وينشئ
+[GitHub Release](https://github.com/m777m44/Translate-Mahdi-2027/releases) مع ملف APK.
 
-**طريقة 1 — GitHub Actions (الأسهل، بدون تثبيت أي شيء):**
-ادفع الفرع وسينفّذ `.github/workflows/build-apk.yml` البناء على خوادم GitHub ويحمّل
-ملف `mahdi-translate.apk` كـ Artifact، أو أنشئ Release وأرفقه. رابِع التحميل يصبح على
-GitHub Releases («موقع ويب للتحميل»).
-
-**طريقة 2 — محلياً (يتطلب Android SDK + JDK 21):**
+**محلياً:**
 ```bash
 npm run build && npx cap sync android
 cd android && ./gradlew assembleDebug
-# الناتج: android/app/build/outputs/apk/debug/app-debug.apk
+# android/app/build/outputs/apk/debug/app-debug.apk
 ```
-
-**طريقة 3 — PWABuilder:** الصق رابط موقعك المنشور في
-[pwabuilder.com](https://www.pwabuilder.com) واحصل على APK/TWA جاهز.
-
-**نشر الملف على موقعك:** انسخ الـ APK إلى `public/downloads/mahdi-translate.apk`
-فيصبح زر «تحميل APK» في التطبيق تحميلاً مباشراً من موقعك.
-
-> لتوجيه الـ APK إلى خلفيتك (الـ API) عدّل `DEFAULT_REMOTE_API` في `apiBase.ts` أو
-> اضبط `localStorage['mahdi_api_base']` إلى رابط موقعك. بدون ذلك يعمل الـ APK بالمحرك
-> المحلي Offline بالكامل.
 
 ---
 
-## ☁️ تفعيل المزامنة السحابية / Enabling cloud sync
+## 🧠 النماذج العصبية / Neural models
 
-1. أنشئ مشروع Firebase وفعّل **Authentication (Google)** و **Firestore**.
-2. انسخ مفاتيح الويب إلى `.env` (انظر `.env.example`).
-3. انشر القواعد: `firebase deploy --only firestore:rules` (الملف `firestore.rules`).
-4. سجّل الدخول من زر الحساب داخل التطبيق → تُزامَن بياناتك عبر الأجهزة.
+| النموذج | الاستخدام | الحجم التقريبي |
+|---|---|---|
+| `Xenova/nllb-200-distilled-600M` | ترجمة متعددة اللغات (200+ لغة) | ~390 MB (INT8) |
+| `Xenova/opus-mt-{src}-{tgt}` | أزواج لغوية سريعة (Bergamot/Marian) | ~75 MB لكل زوج |
+| `Xenova/whisper-tiny` / `whisper-base` | تعرّف الكلام المحلي | 45 / 85 MB |
 
----
-
-## 🧪 الفحص / Verification
-
-```bash
-npm run verify   # 1544 ثيم + فحص عرض كامل للتطبيق
-npm run check    # verify + lint + build
-```
+النماذج تعمل عبر WASM افتراضياً وWebGPU عند الدعم، وتُحمَّل كسوائب كسولة
+(`neural-runtime` chunk) فلا تثقّل الإقلاع.
 
 ---
 
@@ -148,15 +142,35 @@ npm run check    # verify + lint + build
 
 | الملف | الدور |
 |---|---|
-| `App.tsx` | الغلاف الرئيسي والثيمات والاختصارات |
-| `offlineEngine.ts` | المحرك المحلي (مطابقة عبارات + لهجات) |
-| `geminiService.ts` | الترجمة العصبية متعددة النماذج |
-| `cloudSyncService.ts` | Firebase Auth + Firestore |
-| `themeEngine/Registry/Patterns/Context` | نظام 1544 ثيم |
-| `components/` | النافذة العائمة، المصادقة، التثبيت، الثيمات… |
+| `neuralEngine.ts` | محرك NLLB/Marian/Whisper المحلي (Transformers.js) |
+| `langId.ts` | كاشف اللغة ثلاثي الحروف (مستوحى من FastText/Lingua) |
+| `walkieTalkieEngine.ts` | حلقة الاستماع المزدوج (WalkieTalkie) |
+| `p2pSession.ts` | جلسة WebRTC بنظام إشارات يدوي (QR/كود) |
+| `phrasebook.ts` | بنك العبارات + بطاقات Leitner |
+| `documentTranslator.ts` | ترجمة TXT/SRT/VTT مع الحفاظ على البنية |
+| `usageStats.ts` | إحصائيات استخدام محلية |
+| `components/NeuralModelsModal.tsx` | مدير تنزيل النماذج |
+| `components/WalkieTalkieModal.tsx` | واجهة وضع اللاسلكي |
+| `components/P2PConversationModal.tsx` | محادثة جهاز-إلى-جهاز |
+| `components/PhrasebookModal.tsx` | العبارات والمراجعة |
+| `components/DocumentTranslateModal.tsx` | ترجمة المستندات |
+| `components/StatsModal.tsx` / `ToolsHubModal.tsx` / `WhatsNewModal.tsx` | الإحصائيات/مركز الأدوات/ما الجديد |
+| `App.tsx` | الغلاف الرئيسي وسلسلة المحركات الموحدة |
+| `offlineEngine.ts` / `geminiService.ts` | القاموس المحلي / الترجمة السحابية |
+| `themeEngine.ts` وغيرها | نظام 1544 ثيم |
 | `android/` | غلاف Capacitor لبناء APK |
-| `public/` | PWA: manifest + service worker + أيقونات |
-| `server.ts` | Express API (`/api/translate`, `/api/config`…) |
+
+---
+
+## ⚖️ إسناد المشاريع مفتوحة المصدر / Open-source attribution
+
+هذا المشروع **لم ينسخ أي كود** من RTranslator (رخصة GPL-3.0)، بل أعاد تنفيذ
+مفاهيمه باستخدام مكتبات بتراخيص متساهلة:
+
+- **[RTranslator](https://github.com/niedev/RTranslator)** (niedev, GPL-3.0) — مرجع إلهام معماري فقط.
+- **[Transformers.js](https://github.com/huggingface/transformers.js)** (Apache-2.0) + **ONNX Runtime Web** (MIT).
+- **[qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator)** (MIT).
+- النماذج: **NLLB-200** (أوزان CC-BY-NC 4.0)، **Whisper** (MIT)، **Opus-MT/Helsinki-NLP** (CC-BY 2.0).
 
 ---
 

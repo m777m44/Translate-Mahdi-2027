@@ -1,11 +1,21 @@
 {
-  "name": "Remix Mahdi Translate Pro",
-  "description": "An advanced AI-powered translation application with real-time text, voice, and image translation, featuring custom themes and offline capabilities.",
+  "name": "Mahdi Translator Pro 4.0 — RTranslator-grade on-device AI",
+  "version": "4.0.0",
+  "description": "Advanced on-device neural translator (NLLB / Marian-Bergamot / Whisper via Transformers.js + ONNX Runtime Web), WalkieTalkie dual-language mode, WebRTC peer-to-peer translated conversation, document/subtitle translation, offline phrasebook with Leitner flashcards, 1544 themes and cloud sync.",
   "requestFramePermissions": [
     "camera",
     "microphone"
   ],
   "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+    "ON_DEVICE_NEURAL_TRANSLATION_NLLB",
+    "ON_DEVICE_SPEECH_RECOGNITION_WHISPER",
+    "WEBGPU_WASM_INFERENCE",
+    "WALKIETALKIE_DUAL_LANGUAGE_MODE",
+    "WEBRTC_P2P_ENCRYPTED_CONVERSATION",
+    "DOCUMENT_SUBTITLE_TRANSLATION",
+    "OFFLINE_PHRASEBOOK_FLASHCARDS",
+    "TRIGRAM_LANGUAGE_IDENTIFICATION",
+    "SERVER_SIDE_GEMINI_API",
+    "FIRESTORE_CLOUD_SYNC"
   ]
 }

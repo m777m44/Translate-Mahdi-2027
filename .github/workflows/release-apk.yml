@@ -1,0 +1,73 @@
+name: Release Android APK
+
+# Builds the app and publishes a GitHub Release (with the APK attached)
+# whenever a v* tag is pushed, e.g. git tag v4.0.0 && git push origin v4.0.0
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v4.0.0)'
+        required: true
+        default: 'v4.0.0'
+
+jobs:
+  release-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: |
+          npm install --no-audit --no-fund --ignore-scripts
+          npm rebuild esbuild
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Setup Java (JDK 21 for AGP 8)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Ensure Android SDK platform 36 + accept licenses
+        run: |
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-36" "build-tools;36.0.0" || true
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p release
+          cp android/app/build/outputs/apk/debug/app-debug.apk release/mahdi-translate-v4.apk
+          ls -la release
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/mahdi-translate-v4.apk
+          name: "Mahdi Translator Pro ${{ github.ref_name }}"
+          generate_release_notes: true
+          fail_on_unmatched_files: true

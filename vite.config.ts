@@ -16,7 +16,23 @@ export default defineConfig(() => {
           : undefined,
       },
       build: {
-        chunkSizeWarningLimit: 900,
+        chunkSizeWarningLimit: 1600,
+        rollupOptions: {
+          output: {
+            // Keep the heavy on-device AI runtime in its own lazy chunk so the
+            // main app stays fast and only downloads it when a neural tool opens.
+            // Vite automatically emits the ONNX wasm binary next to this chunk
+            // and Transformers.js rewires wasmPaths to the bundled local asset.
+            manualChunks: {
+              'neural-runtime': ['@huggingface/transformers'],
+            },
+          },
+        },
+      },
+      // Transformers.js / ONNX Runtime Web are loaded lazily at runtime;
+      // pre-bundling them in dev causes duplicated ESM instances, so exclude.
+      optimizeDeps: {
+        exclude: ['@huggingface/transformers'],
       },
       plugins: [react()],
       resolve: {

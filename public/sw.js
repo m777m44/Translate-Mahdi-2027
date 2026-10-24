@@ -1,10 +1,15 @@
-/* Service worker for Mahdi Translate Pro.
+/* Service worker for Mahdi Translator Pro.
  * Strategy:
- *  - app shell / static assets: cache-first with background revalidation
- *  - /api/* and cross-origin: network-first, falling back to cache offline
+ *  - app shell / static assets (incl. ONNX wasm binaries): cache-first with
+ *    background revalidation, so the whole app + neural runtime work offline
+ *  - /api/*: never cached
+ *  - AI model hosts (Hugging Face / mirrors): bypassed — Transformers.js owns
+ *    model caching itself, avoiding duplicate multi-hundred-MB storage
+ *  - other cross-origin (fonts, Tailwind CDN): network first, cache fallback
  */
-const CACHE = 'mahdi-translate-v1';
+const CACHE = 'mahdi-translate-v4';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon.svg'];
+const MODEL_HOSTS = ['huggingface.co', 'hf.co', 'hf-mirror.com', 'cdn-lfs'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -35,12 +40,15 @@ self.addEventListener('fetch', event => {
   // Never cache the translation API or Google auth calls.
   if (isApi) return;
 
+  // Model downloads are managed by Transformers.js' own Cache API storage.
+  if (MODEL_HOSTS.some(host => url.hostname.includes(host))) return;
+
   if (isSameOrigin) {
     event.respondWith(
       caches.match(req).then(cached => {
         const network = fetch(req)
           .then(res => {
-            if (res && res.status === 200 && res.type === 'basic') {
+            if (res && res.status === 200 && (res.type === 'basic' || res.type === 'cors')) {
               const copy = res.clone();
               caches.open(CACHE).then(cache => cache.put(req, copy));
             }

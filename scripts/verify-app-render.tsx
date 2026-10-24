@@ -107,5 +107,39 @@ applyTheme(getThemeById('sig-alabaster'), {});
 check('switching theme updates the primary colour', written['--mt-primary'] !== before, `${before} → ${written['--mt-primary']}`);
 check('light theme flips the colour scheme flag', (g as any).document.documentElement.dataset.mtDark === 'false');
 
+// 6. v4 on-device AI suite — every new modal must render while open ---------
+const fakeTranslate = async (t: string) => `[t] ${t}`;
+const noopAsync = async () => {};
+const theme = getThemeById('sig-mahdi-gold');
+const renderModal = async (path: string, props: Record<string, unknown>) => {
+  try {
+    const mod = await import(path);
+    const Component = mod[Object.keys(mod).find((k) => k.endsWith('Modal'))!];
+    const out = renderToStaticMarkup(React.createElement(Component, props));
+    check(`${path.split('/').pop()} renders open`, out.length > 100, `${out.length} chars`);
+  } catch (err: any) {
+    check(`${path.split('/').pop()} renders open`, false, String(err?.stack || err).split('\n').slice(0, 3).join(' | '));
+  }
+};
+
+const sharedModalProps = {
+  isOpen: true,
+  onClose: noop,
+  theme,
+  translateFn: fakeTranslate,
+  onSpeak: noop,
+  onToast: noop,
+};
+await renderModal('../components/ToolsHubModal.tsx', { ...sharedModalProps, onOpenTool: noop });
+await renderModal('../components/NeuralModelsModal.tsx', {
+  ...sharedModalProps, quality: 'balanced-int8', onQualityChange: noop, useGpu: true, onUseGpuChange: noop,
+});
+await renderModal('../components/WalkieTalkieModal.tsx', sharedModalProps);
+await renderModal('../components/P2PConversationModal.tsx', sharedModalProps);
+await renderModal('../components/PhrasebookModal.tsx', sharedModalProps);
+await renderModal('../components/DocumentTranslateModal.tsx', sharedModalProps);
+await renderModal('../components/StatsModal.tsx', { isOpen: true, onClose: noop, theme });
+await renderModal('../components/WhatsNewModal.tsx', { isOpen: true, onClose: noop, theme });
+
 console.log(`\n${failures === 0 ? '✅ ALL APP CHECKS PASSED' : `❌ ${failures} CHECK(S) FAILED`}\n`);
 process.exit(failures === 0 ? 0 : 1);

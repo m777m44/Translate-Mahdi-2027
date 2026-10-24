@@ -1,18 +1,25 @@
 {
-  "name": "Mahdi Translate Pro — مترجم مهدي",
+  "name": "Mahdi Translator Pro 4.0 — مترجم مهدي",
   "short_name": "Mahdi Translate",
-  "description": "مترجم احترافي متعدد اللغات بواجهة عربية مع 1544 ثيم ومزامنة سحابية للسجل",
+  "description": "مترجم احترافي بذكاء اصطناعي على الجهاز (NLLB وWhisper) ووضع لاسلكي ومحادثة مشفّرة بين جهازين وترجمة مستندات و1544 ثيم",
   "lang": "ar",
   "dir": "rtl",
   "scope": "/",
   "start_url": "/?source=pwa",
   "id": "mahdi-translate-pro",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "any",
   "background_color": "#070a12",
   "theme_color": "#070a12",
-  "categories": ["productivity", "utilities"],
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/icons/icon.svg",
@@ -51,7 +58,12 @@
       "short_name": "ترجمة",
       "description": "افتح المترجم مباشرة",
       "url": "/?action=translate",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ],
   "screenshots": [
@@ -62,5 +74,6 @@
       "form_factor": "narrow",
       "label": "Mahdi Translate Pro"
     }
-  ]
+  ],
+  "version": "4.0.0"
 }

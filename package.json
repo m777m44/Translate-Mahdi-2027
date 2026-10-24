@@ -1,7 +1,7 @@
 {
   "name": "mahdi-translate-pro",
   "private": true,
-  "version": "0.0.0",
+  "version": "4.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx --env-file-if-exists=.env server.ts",
@@ -22,9 +22,12 @@
     "@capacitor/android": "^8.5.2",
     "@capacitor/core": "^8.5.2",
     "@google/genai": "^1.39.0",
+    "@huggingface/transformers": "^3.8.1",
     "express": "^5.2.1",
     "firebase": "^12.19.0",
     "lucide-react": "^0.563.0",
+    "onnxruntime-web": "^1.22.0-dev.20250409-89f8206ba4",
+    "qrcode-generator": "^2.0.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },

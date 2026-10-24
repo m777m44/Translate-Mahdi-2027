@@ -12,6 +12,18 @@ on:
     paths:
       - 'android/**'
       - 'capacitor.config.ts'
+      - 'package.json'
+      - 'vite.config.ts'
+      - 'App.tsx'
+      - 'neuralEngine.ts'
+      - 'walkieTalkieEngine.ts'
+      - 'p2pSession.ts'
+      - 'phrasebook.ts'
+      - 'documentTranslator.ts'
+      - 'usageStats.ts'
+      - 'langId.ts'
+      - 'components/**'
+      - 'public/**'
       - '.github/workflows/build-apk.yml'
 
 jobs:
@@ -30,9 +42,13 @@ jobs:
           node-version: 22
 
       # Repo convention is bun.lock (package-lock.json is gitignored), so use
-      # a plain install rather than `npm ci` (which requires a lockfile).
+      # a plain install. --ignore-scripts skips onnxruntime-node's native
+      # download (browser builds only need onnxruntime-web); esbuild is rebuilt
+      # explicitly afterwards so the Vite build keeps working.
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          npm install --no-audit --no-fund --ignore-scripts
+          npm rebuild esbuild
 
       - name: Build web assets
         run: npm run build
