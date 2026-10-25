@@ -267,7 +267,7 @@ export const GoogleTranslateResultView: React.FC<GoogleTranslateResultViewProps>
             >
               {copiedSource ? <Check size={18} /> : <Copy size={18} />}
             </button>
-            <button onClick={onSpeakSource} className="mt-icon-btn p-2" title="استماع إلى النص الأصلي" aria-label="استماع للنص الأصلي">
+            <button onClick={onSpeakSource} disabled={!sourceText?.trim()} className="mt-icon-btn p-2 disabled:opacity-40 disabled:cursor-not-allowed" title="استماع إلى النص الأصلي" aria-label="استماع للنص الأصلي">
               <Volume2 size={18} />
             </button>
           </div>
@@ -406,7 +406,7 @@ export const GoogleTranslateResultView: React.FC<GoogleTranslateResultViewProps>
                 {copiedTarget ? <Check size={19} /> : <Copy size={19} />}
               </button>
 
-              <button onClick={onSpeakTarget} className="mt-icon-btn p-2" title="استماع إلى الترجمة" aria-label="استماع للترجمة">
+              <button onClick={onSpeakTarget} disabled={!translatedText?.trim()} className="mt-icon-btn p-2 disabled:opacity-40 disabled:cursor-not-allowed" title="استماع إلى الترجمة" aria-label="استماع للترجمة">
                 <Volume2 size={20} />
               </button>
             </div>

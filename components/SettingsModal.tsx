@@ -141,7 +141,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="p-2 rounded-xl mt-accent-soft shrink-0"><Info size={17} /></div>
             <div className="text-[10px] mt-subtext leading-relaxed">
               <div className="font-extrabold mt-heading mb-0.5">مهدي للترجمة — Mahdi Translate</div>
-              <div>الإصدار 5.0.0 · MAHDI © 2027 · ترجمة فكية فورية أونلاين وأوفلاين</div>
+              <div>الإصدار 5.1.0 · MAHDI © 2027 · ترجمة فورية أونلاين وأوفلاين</div>
             </div>
           </div>
         </div>

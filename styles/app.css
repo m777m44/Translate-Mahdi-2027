@@ -778,3 +778,84 @@ html, body {
 @media (max-width: 640px) {
   .mt-desktop-only { display: none !important; }
 }
+
+/* ---------------------------------------------------------------------------
+   v5.1 — ordered top bar + horizontal chat button + overlay guide polish
+--------------------------------------------------------------------------- */
+
+/* Horizontal icon+label top-bar buttons; labels collapse to icons on phones */
+.mt-topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--mt-text);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, transform .12s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.mt-topbar-btn:hover {
+  background: var(--mt-surface);
+  border-color: var(--mt-border);
+}
+.mt-topbar-btn:active { transform: scale(.95); }
+.mt-topbar-btn svg { flex-shrink: 0; }
+@media (max-width: 500px) {
+  .mt-topbar-btn { padding: 0 8px; min-width: 38px; justify-content: center; }
+  .mt-topbar-label { display: none; }
+}
+
+/* Compact horizontal conversation pill — always icon + inline Arabic label,
+   never stacked/vertical, capped width so it cannot collide with neighbours */
+.mt-chat-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 120px;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--mt-border);
+  background: var(--mt-primary-gradient);
+  color: var(--mt-on-primary, #fff);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .22);
+  transition: transform .18s ease, box-shadow .2s ease, filter .2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.mt-chat-button:hover { filter: brightness(1.06); box-shadow: 0 8px 20px rgba(0, 0, 0, .28); }
+.mt-chat-button:active { transform: scale(.95); }
+.mt-chat-button .label {
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+}
+@media (max-width: 400px) {
+  .mt-chat-button { padding: 0 12px; height: 42px; font-size: 12px; }
+  .mt-chat-button .label { font-size: 12px; }
+}
+
+/* Buttons inside the dual-conversation sheet inherit the same horizontal rule */
+.mt-dual-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+}

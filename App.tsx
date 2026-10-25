@@ -13,7 +13,7 @@ import {
 } from './constants.ts';
 import { useTheme } from './themeContext.tsx';
 import { ThemeGallery } from './components/ThemeGallery.tsx';
-import { translateText, speakText, translateImage } from './geminiService.ts';
+import { translateText, translateImage } from './geminiService.ts';
 import { translateOffline } from './offlineEngine.ts';
 import {
   getOfflinePacks,
@@ -29,11 +29,17 @@ import { ImageTranslateModal } from './components/ImageTranslateModal.tsx';
 import { ZoomModal } from './components/ZoomModal.tsx';
 import { LanguageSelectDropdown } from './components/LanguageSelectDropdown.tsx';
 import { StarredTranslationsModal } from './components/StarredTranslationsModal.tsx';
-import { HandwritingModal } from './components/HandwritingModal.tsx';
 import { GoogleTranslateResultView } from './components/GoogleTranslateResultView.tsx';
 import { InstallAppButton } from './components/InstallAppButton.tsx';
+import { OverlayPermissionGuide } from './components/OverlayPermissionGuide.tsx';
 import { ensureTargetScript, beautifyArabic } from './transliterate.ts';
 import { recognizeImageText } from './ocr.ts';
+import { tts } from './tts.ts';
+import {
+  isNativeOverlaySupported,
+  checkOverlayPermission,
+  showNativeOverlay,
+} from './floatingWindow.ts';
 import {
   createSpeechSession,
   initHardwareBack,
@@ -42,9 +48,9 @@ import {
   SpeechSession,
 } from './platform.ts';
 import {
-  Languages, History, Volume2, Copy, Camera, Mic, MicOff, ArrowRightLeft,
+  History, Volume2, Copy, Camera, Mic, MicOff, ArrowRightLeft,
   Trash2, X, Wifi, WifiOff, Sparkles, Star, CornerDownLeft,
-  Palette, Settings as SettingsIcon, Pen, SquareStack, Power, Share2,
+  Palette, Settings as SettingsIcon, SquareStack, Share2, MessageSquareText,
 } from 'lucide-react';
 
 const AVAILABLE_VOICES = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Zephyr'];
@@ -99,7 +105,7 @@ export const App: React.FC = () => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isPacksOpen, setIsPacksOpen] = useState(false);
   const [isStarredOpen, setIsStarredOpen] = useState(false);
-  const [isHandwritingOpen, setIsHandwritingOpen] = useState(false);
+  const [isOverlayGuideOpen, setIsOverlayGuideOpen] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [isDualOpen, setIsDualOpen] = useState(false);
 
@@ -203,7 +209,7 @@ export const App: React.FC = () => {
       [isThemeGalleryOpen, () => setIsThemeGalleryOpen(false)],
       [isPacksOpen, () => setIsPacksOpen(false)],
       [isStarredOpen, () => setIsStarredOpen(false)],
-      [isHandwritingOpen, () => setIsHandwritingOpen(false)],
+      [isOverlayGuideOpen, () => setIsOverlayGuideOpen(false)],
       [isZoomOpen, () => setIsZoomOpen(false)],
       [isSettingsOpen, () => setIsSettingsOpen(false)],
       [showHistory, () => setShowHistory(false)],
@@ -422,10 +428,13 @@ export const App: React.FC = () => {
   }, [isListening, speechInterim, sourceLang, detectedLangCode, showToast]);
 
   // ── Small shared actions ────────────────────────────────────────────────
+  // Robust local TTS: cancels previous speech, waits for device voices, and
+  // always uses the freshest text (no stale closures) — works before and
+  // after translation, online and offline.
   const handleSpeak = useCallback((text: string, lang: string) => {
     if (!text?.trim()) return;
     const actualLang = lang === 'auto' ? (detectedLangCode || 'ar') : lang;
-    void speakText(text, actualLang, ttsSettings);
+    void tts.speak(text, actualLang, ttsSettings.rate || 1, ttsSettings.pitch || 1);
   }, [detectedLangCode, ttsSettings]);
 
   const copyToClipboard = useCallback((text: string) => {
@@ -559,6 +568,26 @@ export const App: React.FC = () => {
     }
   }, [finalizeTarget]);
 
+  // Floating entry point: native SYSTEM_ALERT_WINDOW overlay on Android, with
+  // the permission guide when needed; in-page floating window on web/PWA.
+  const openFloating = useCallback(async () => {
+    if (!isNativeOverlaySupported()) {
+      setIsFloatingOpen(true);
+      return;
+    }
+    const perm = await checkOverlayPermission();
+    if (perm.granted) {
+      try {
+        await showNativeOverlay({ width: 320, height: 380, x: 24, y: 120 });
+        showToast('النافذة العائمة تعمل الآن فوق كل التطبيقات 🪟');
+      } catch {
+        setIsOverlayGuideOpen(true);
+      }
+    } else {
+      setIsOverlayGuideOpen(true);
+    }
+  }, [showToast]);
+
   const composedSource = speechInterim ? `${inputText}${inputText ? ' ' : ''}${speechInterim}` : inputText;
   const offlineActive = forceOffline || isOffline;
 
@@ -580,9 +609,9 @@ export const App: React.FC = () => {
           style={{ borderColor: 'var(--mt-border)', borderRadius: 'var(--mt-radius)' }}
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <img src="/icons/icon-192.png" alt="مهدي للترجمة" className="w-9 h-9 rounded-xl shadow shrink-0" />
+            <img src="/icons/icon-192.png" alt="Translate Mahdi 2027" className="w-9 h-9 rounded-xl shadow shrink-0" />
             <div className="min-w-0">
-              <h1 className="text-sm sm:text-base font-extrabold mt-heading truncate leading-tight">مهدي للترجمة</h1>
+              <h1 className="text-sm sm:text-base font-extrabold mt-heading truncate leading-tight">مهدي للترجمة 2027</h1>
               <p className="text-[9.5px] mt-subtext font-semibold truncate flex items-center gap-1">
                 {offlineActive ? <WifiOff size={10} /> : <Wifi size={10} />}
                 {offlineActive ? 'وضع بدون إنترنت' : 'ترجمة فورية'}
@@ -590,25 +619,20 @@ export const App: React.FC = () => {
             </div>
           </div>
 
+          {/* Ordered horizontal top bar: icon + label, labels hide on phones */}
           <div className="flex items-center gap-1 sm:gap-1.5">
-            <button onClick={() => setIsFloatingOpen(true)} className="mt-icon-btn p-2" title="النافذة العائمة" aria-label="النافذة العائمة">
+            <button onClick={openFloating} className="mt-topbar-btn" title="النافذة العائمة فوق التطبيقات" aria-label="النافذة العائمة">
               <SquareStack size={17} />
+              <span className="mt-topbar-label">عائمة</span>
             </button>
-            <button onClick={() => setIsThemeGalleryOpen(true)} className="mt-icon-btn p-2" title="الثيمات" aria-label="مكتبة الثيمات">
+            <button onClick={() => setIsThemeGalleryOpen(true)} className="mt-topbar-btn" title="مكتبة الثيمات" aria-label="مكتبة الثيمات">
               <Palette size={17} />
-            </button>
-            <button
-              onClick={() => setKeepScreenOn((v) => !v)}
-              className="mt-icon-btn p-2"
-              data-active={keepScreenOn}
-              title={keepScreenOn ? 'الشاشة مضاءة: مفعّل' : 'إبقاء الشاشة مضاءة'}
-              aria-label="إبقاء الشاشة مضاءة"
-            >
-              <Power size={17} />
+              <span className="mt-topbar-label">ثيمات</span>
             </button>
             <InstallAppButton />
-            <button onClick={() => setIsSettingsOpen(true)} className="mt-icon-btn p-2" title="الإعدادات" aria-label="الإعدادات">
+            <button onClick={() => setIsSettingsOpen(true)} className="mt-topbar-btn" title="الإعدادات" aria-label="الإعدادات">
               <SettingsIcon size={17} />
+              <span className="mt-topbar-label">إعدادات</span>
             </button>
           </div>
         </header>
@@ -678,11 +702,8 @@ export const App: React.FC = () => {
             </div>
           )}
 
-          {/* Quick tool row: handwriting / history / favourites / share */}
+          {/* Quick tool row: history / favourites / share */}
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <button onClick={() => setIsHandwritingOpen(true)} className="mt-btn mt-btn-ghost rounded-full px-3 py-2 text-[11px] font-bold flex items-center gap-1.5">
-              <Pen size={14} /> كتابة باليد
-            </button>
             <button onClick={() => setShowHistory((v) => !v)} className="mt-btn mt-btn-ghost rounded-full px-3 py-2 text-[11px] font-bold flex items-center gap-1.5" data-active={showHistory}>
               <History size={14} /> السجل
             </button>
@@ -771,13 +792,15 @@ export const App: React.FC = () => {
                 </span>
               </div>
 
+              {/* Conversation: compact horizontal pill, never vertical/cramped */}
               <div className="flex flex-col items-center gap-1.5">
                 <button onClick={() => setIsDualOpen(true)}
-                  className="mt-glass mt-icon-btn w-12 h-12 sm:w-14 sm:h-14 hover:scale-105 active:scale-95"
-                  title="محادثة صوتية ثنائية اللغة">
-                  <Languages size={22} />
+                  className="mt-chat-button"
+                  title="محادثة صوتية ثنائية اللغة"
+                  aria-label="محادثة">
+                  <MessageSquareText size={18} />
+                  <span className="label">محادثة</span>
                 </button>
-                <span className="text-[10px] sm:text-[11px] font-semibold opacity-80 whitespace-nowrap">محادثة</span>
               </div>
             </div>
           </div>
@@ -856,10 +879,11 @@ export const App: React.FC = () => {
         theme={currentTheme}
       />
 
-      <HandwritingModal
-        isOpen={isHandwritingOpen}
-        onClose={() => setIsHandwritingOpen(false)}
-        onApplyText={(t) => { setInputText((prev) => (prev ? `${prev} ${t}` : t)); showToast('تم إدراج النص المكتوب بخط اليد'); }}
+      <OverlayPermissionGuide
+        isOpen={isOverlayGuideOpen}
+        onClose={() => setIsOverlayGuideOpen(false)}
+        onActivated={() => { /* native overlay service is now running */ }}
+        onShowToast={showToast}
       />
 
       {isThemeGalleryOpen && (

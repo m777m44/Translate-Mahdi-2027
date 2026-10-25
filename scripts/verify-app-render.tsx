@@ -154,7 +154,9 @@ await renderModal('../components/StarredTranslationsModal.tsx', {
   isOpen: true, onClose: noop, favorites: [], onToggleFavorite: noop,
   onSelectTranslation: noop, onSpeak: noop, onCopy: noop, theme,
 });
-await renderModal('../components/HandwritingModal.tsx', { isOpen: true, onClose: noop, onApplyText: noop });
+await renderModal('../components/OverlayPermissionGuide.tsx', {
+  isOpen: true, onClose: noop, onActivated: noop, onShowToast: noop,
+});
 await renderModal('../components/ZoomModal.tsx', {
   isOpen: true, onClose: noop, zoom: 100, onChangeZoom: noop, currentTheme: theme,
 });

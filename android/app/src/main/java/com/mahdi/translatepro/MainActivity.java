@@ -1,5 +1,20 @@
 package com.mahdi.translatepro;
 
-import com.getcapacitor.BridgeActivity;
+import android.os.Bundle;
 
-public class MainActivity extends BridgeActivity {}
+import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.Plugin;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity extends BridgeActivity {
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        List<Class<? extends Plugin>> plugins = new ArrayList<>();
+        plugins.add(FloatingWindowPlugin.class);
+        registerPlugins(plugins);
+        super.onCreate(savedInstanceState);
+    }
+}

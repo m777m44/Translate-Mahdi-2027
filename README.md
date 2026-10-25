@@ -1,11 +1,11 @@
-# 🌐 مهدي للترجمة 5.0 — Mahdi Translate
+# 🌐 Translate Mahdi 2027 (5.1) — مهدي للترجمة
 
 > مترجم فوري مركّز وأنيق بأسلوب **ترجمة جوجل**: ترجمة فورية أثناء الكتابة،
 > إدخال صوتي، ترجمة صور وكاميرا، **نافذة عائمة قابلة للسحب**، عمل بدون إنترنت،
 > أكثر من **1544 ثيم**، وتطبيق Android قابل للتثبيت (APK / PWA) — بدون حساب
 > وبدون أي أزرار مشتتة.
 
-**A focused, Google-Translate-style instant translator** — instant debounced
+**v5.1 — native SYSTEM_ALERT_WINDOW floating window above every app, robust local TTS, ordered top bar, horizontal chat button. A focused, Google-Translate-style instant translator** — instant debounced
 translation, native Android speech recognition with a Web Speech fallback,
 camera/gallery image translation with server vision plus an on-device Tesseract
 OCR fallback, a draggable floating window, offline dictionary mode, history and
@@ -49,8 +49,11 @@ no in-app APK button.
   (عربي + إنجليزي) ثم ترجمة النص المستخرج — فلا تفشل ترجمة الصور بصمت أبداً.
 
 ### 🪟 النافذة العائمة
-- نافذة ترجمة صغيرة قابلة للسحب والتصغير والتكبير والتحجيم، تطفو فوق كل الشاشات
-  بلا مغادرة السياق، مع حفظ مكانها وحجمها محلياً.
+- **على أندرويد:** نافذة أصلية عبر إذن `SYSTEM_ALERT_WINDOW` وخدمة مقدمة — فقاعة قابلة
+  للسحب + لوحة WebView مستقلة تطفو فوق كل التطبيقات الأخرى ولا تختفي عند مغادرة التطبيق،
+  مع دليل عربي لمنح الإذن (`OverlayPermissionGuide`).
+- **على الويب/PWA:** نافذة ترجمة صغيرة قابلة للسحب والتصغير والتكبير والتحجيم داخل الصفحة،
+  مع حفظ مكانها وحجمها محلياً.
 
 ### 🧭 التنقل والأجهزة
 - زر الرجوع في كل النطاقات: إغلاق النوافذ أولاً، ثم **ضغطتان متتاليتان للخروج**
@@ -115,6 +118,10 @@ cd android && ./gradlew assembleDebug
 |---|---|
 | `App.tsx` | الواجهة الرئيسية بأسلوب ترجمة جوجل وسلسلة المحركات الموحدة |
 | `platform.ts` | جسر الأجهزة: تعرف صوتي موحّد، زر الرجوع، الخروج، الكاميرا الأصلية |
+| `floatingWindow.ts` | جسر الإضافة الأصلية للنافذة العائمة (أذونات + show/hide) مع بديل ويب |
+| `tts.ts` | نطق محلي موثوق: انتظار الأصوات، إلغاء النطق السابق، مطابقة اللغة |
+| `public/floating.html` | صفحة اللوحة العائمة المستقلة داخل الـWebView فوق التطبيقات |
+| `android/.../FloatingWindowPlugin.java` + `FloatingWindowService.java` | إضافة كاباسيتور وخدمة TYPE_APPLICATION_OVERLAY |
 | `ocr.ts` | استخراج النص من الصور عبر Tesseract (تحميل كسول عند الحاجة) |
 | `transliterate.ts` | كشف الخط، النقحرة، ضمان خط الهدف، تجميل العربية |
 | `offlineEngine.ts` | القاموس المحلي + الترجمة كلمة-بكلمة |

@@ -289,13 +289,14 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
               </>
             )}
 
-            <button 
+            <button
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] hover:text-[var(--mt-text)] transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
+              className="mt-dual-action min-h-10 px-3.5 py-1.5 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] hover:text-[var(--mt-text)] transition-all text-xs font-bold active:scale-95"
               title="إغلاق والعودة"
+              aria-label="إغلاق"
             >
               <X className="w-4 h-4" />
-              <span>إغلاق</span>
+              <span className="mt-topbar-label">إغلاق</span>
             </button>
           </div>
         </div>
@@ -415,9 +416,9 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                 />
                 <button
                   onClick={() => startVoiceInput('A')}
-                  className={`p-2 rounded-xl text-xs font-bold transition-all ${
-                    isListeningA 
-                      ? 'bg-[var(--mt-danger)]  animate-pulse shadow-lg ' 
+                  className={`mt-dual-action min-w-10 min-h-10 p-2 rounded-xl text-xs font-bold transition-all ${
+                    isListeningA
+                      ? 'bg-[var(--mt-danger)]  animate-pulse shadow-lg '
                       : 'mt-btn-primary hover:bg-amber-400'
                   }`}
                   title="تحدث بالصوت"
@@ -427,7 +428,7 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                 <button
                   onClick={handleSendSpeakerA}
                   disabled={!inputA.trim() || isTranslating}
-                  className="p-2 rounded-xl mt-accent-soft hover:bg-amber-500/30 mt-accent-text disabled:opacity-30 text-xs font-bold"
+                  className="mt-dual-action min-w-10 min-h-10 p-2 rounded-xl mt-accent-soft hover:bg-amber-500/30 mt-accent-text disabled:opacity-30 text-xs font-bold"
                   title="إرسال وترجمة"
                 >
                   <Send className="w-3.5 h-3.5 rotate-180" />
@@ -454,9 +455,9 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                 />
                 <button
                   onClick={() => startVoiceInput('B')}
-                  className={`p-2 rounded-xl text-xs font-bold transition-all ${
-                    isListeningB 
-                      ? 'bg-[var(--mt-danger)]  animate-pulse shadow-lg ' 
+                  className={`mt-dual-action min-w-10 min-h-10 p-2 rounded-xl text-xs font-bold transition-all ${
+                    isListeningB
+                      ? 'bg-[var(--mt-danger)]  animate-pulse shadow-lg '
                       : 'bg-indigo-500  hover:bg-indigo-400'
                   }`}
                   title="تحدث بالصوت"
@@ -466,7 +467,7 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                 <button
                   onClick={handleSendSpeakerB}
                   disabled={!inputB.trim() || isTranslating}
-                  className="p-2 rounded-xl mt-accent-soft hover:bg-indigo-500/30 text-indigo-300 disabled:opacity-30 text-xs font-bold"
+                  className="mt-dual-action min-w-10 min-h-10 p-2 rounded-xl mt-accent-soft hover:bg-indigo-500/30 text-indigo-300 disabled:opacity-30 text-xs font-bold"
                   title="إرسال وترجمة"
                 >
                   <Send className="w-3.5 h-3.5 rotate-180" />

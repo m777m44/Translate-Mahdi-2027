@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>نافذة الترجمة العائمة</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: linear-gradient(160deg, #0b1220 0%, #0f1d33 100%);
+    color: #e8eef7;
+    font-family: 'Cairo', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+  }
+  .wrap { display: flex; flex-direction: column; height: 100%; padding: 10px; gap: 8px; }
+  .lang-row { display: flex; align-items: center; gap: 6px; }
+  select {
+    flex: 1; min-width: 0;
+    background: #13203a; color: #e8eef7;
+    border: 1px solid #243654; border-radius: 12px;
+    padding: 8px 6px; font-size: 12px; font-weight: 700; outline: none;
+  }
+  button {
+    border: none; cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 4px; border-radius: 12px; font-weight: 800;
+    transition: transform .12s ease, background .2s ease;
+    touch-action: manipulation;
+  }
+  button:active { transform: scale(.94); }
+  .swap {
+    width: 38px; height: 38px; flex-shrink: 0;
+    background: linear-gradient(135deg, #14b8a6, #2563eb); color: #fff;
+    font-size: 16px;
+  }
+  textarea {
+    width: 100%; flex: 1 1 42%; min-height: 0; resize: none;
+    background: #0f1a2e; color: #e8eef7;
+    border: 1px solid #243654; border-radius: 14px;
+    padding: 10px; font-size: 14px; line-height: 1.6; outline: none;
+    font-family: inherit;
+  }
+  textarea::placeholder { color: #64748b; }
+  .result {
+    flex: 1 1 42%; min-height: 0; overflow-y: auto;
+    background: #13203a; border: 1px solid #243654; border-radius: 14px;
+    padding: 10px; font-size: 14px; line-height: 1.7;
+    overflow-wrap: anywhere; word-break: break-word;
+  }
+  .result.empty { color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .toolbar { display: flex; gap: 6px; }
+  .tool {
+    flex: 1; height: 40px; font-size: 12px;
+    background: #1b2c4a; color: #dbe6f5;
+  }
+  .tool:disabled { opacity: .4; cursor: default; }
+  .tool.primary { background: linear-gradient(135deg, #14b8a6, #2563eb); color: #fff; }
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.35);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin .8s linear infinite; display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status { font-size: 10px; color: #7dd3fc; text-align: center; min-height: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="lang-row">
+    <select id="from" aria-label="من لغة">
+      <option value="auto">تعرف تلقائي</option>
+      <option value="ar">العربية</option>
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+      <option value="de">Deutsch</option>
+      <option value="tr">Türkçe</option>
+      <option value="ru">Русский</option>
+      <option value="fa">فارسی</option>
+      <option value="ur">اردو</option>
+      <option value="hi">हिन्दी</option>
+      <option value="zh">中文</option>
+      <option value="ja">日本語</option>
+      <option value="ko">한국어</option>
+      <option value="pt">Português</option>
+      <option value="id">Indonesia</option>
+      <option value="nl">Nederlands</option>
+      <option value="he">עברית</option>
+    </select>
+    <button class="swap" id="swap" title="عكس اللغتين" aria-label="عكس اللغتين">⇄</button>
+    <select id="to" aria-label="إلى لغة">
+      <option value="ar">العربية</option>
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+      <option value="de">Deutsch</option>
+      <option value="tr">Türkçe</option>
+      <option value="ru">Русский</option>
+      <option value="fa">فارسی</option>
+      <option value="ur">اردو</option>
+      <option value="hi">हिन्दी</option>
+      <option value="zh">中文</option>
+      <option value="ja">日本語</option>
+      <option value="ko">한국어</option>
+      <option value="pt">Português</option>
+      <option value="id">Indonesia</option>
+      <option value="nl">Nederlands</option>
+      <option value="he">עברית</option>
+    </select>
+  </div>
+
+  <textarea id="source" placeholder="اكتب النص هنا للترجمة الفورية…" autofocus></textarea>
+
+  <div class="result empty" id="result">الترجمة ستظهر هنا</div>
+
+  <div class="status" id="status"></div>
+
+  <div class="toolbar">
+    <button class="tool primary" id="go">ترجم</button>
+    <button class="tool" id="speakSrc" disabled>🔊 نطق</button>
+    <button class="tool" id="speakRes" disabled>🔊 النتيجة</button>
+    <button class="tool" id="copy" disabled>نسخ</button>
+    <button class="tool" id="clear">مسح</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const from = $('from'), to = $('to'), src = $('source'), res = $('result'),
+        status = $('status'), go = $('go'),
+        speakSrc = $('speakSrc'), speakRes = $('speakRes'),
+        copyBtn = $('copy'), clearBtn = $('clear'), swapBtn = $('swap');
+  let timer = null, busy = false, lastResult = '';
+
+  const setStatus = (msg) => { status.textContent = msg || ''; };
+
+  async function gtxTranslate(text, sl, tl) {
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&dt=t'
+      + '&sl=' + encodeURIComponent(sl) + '&tl=' + encodeURIComponent(tl)
+      + '&q=' + encodeURIComponent(text);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('gtx failed');
+    const data = await r.json();
+    return (data[0] || []).map(seg => seg[0]).join('');
+  }
+
+  async function myMemoryTranslate(text, sl, tl) {
+    const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text)
+      + '&langpair=' + encodeURIComponent(sl + '|' + tl);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('mymemory failed');
+    const data = await r.json();
+    return data?.responseData?.translatedText || '';
+  }
+
+  async function translate() {
+    const text = src.value.trim();
+    if (!text || busy) return;
+    busy = true;
+    go.innerHTML = '<span class="spinner"></span>';
+    setStatus('جاري الترجمة…');
+    try {
+      const sl = from.value === 'auto' ? 'auto' : from.value;
+      const tl = to.value;
+      let out = '';
+      try {
+        out = await gtxTranslate(text, sl, tl);
+      } catch (e) {
+        const fixedSl = sl === 'auto' ? 'en' : sl;
+        out = await myMemoryTranslate(text, fixedSl, tl);
+      }
+      lastResult = (out || '').trim();
+      res.textContent = lastResult || 'تعذّرت الترجمة، حاول مجدداً';
+      res.classList.toggle('empty', !lastResult);
+      speakRes.disabled = !lastResult;
+      copyBtn.disabled = !lastResult;
+      setStatus(lastResult ? 'تمت الترجمة ✓' : 'لا توجد نتيجة');
+    } catch (e) {
+      res.textContent = 'تعذّر الاتصال بالإنترنت للترجمة.';
+      res.classList.add('empty');
+      setStatus('فشل الاتصال');
+    } finally {
+      busy = false;
+      go.textContent = 'ترجم';
+    }
+  }
+
+  function schedule() {
+    clearTimeout(timer);
+    timer = setTimeout(translate, 450);
+  }
+
+  // ── Local TTS with voice readiness + cancel-before-speak ────────────────
+  let voices = [];
+  const loadVoices = () => { voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; };
+  loadVoices();
+  if ('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = loadVoices;
+  }
+  function bcp47(code) {
+    const map = { ar: 'ar-SA', en: 'en-US', fr: 'fr-FR', es: 'es-ES', de: 'de-DE',
+      tr: 'tr-TR', ru: 'ru-RU', fa: 'fa-IR', ur: 'ur-PK', hi: 'hi-IN', zh: 'zh-CN',
+      ja: 'ja-JP', ko: 'ko-KR', pt: 'pt-PT', id: 'id-ID', nl: 'nl-NL', he: 'he-IL' };
+    return map[code] || code || 'ar-SA';
+  }
+  function speak(text, langCode) {
+    if (!text || !('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = bcp47(langCode);
+    u.rate = 1; u.pitch = 1; u.volume = 1;
+    const base = u.lang.split('-')[0];
+    const v = voices.find(x => x.lang === u.lang) || voices.find(x => x.lang.startsWith(base));
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  }
+
+  // ── Wiring ──────────────────────────────────────────────────────────────
+  src.addEventListener('input', () => {
+    speakSrc.disabled = !src.value.trim();
+    schedule();
+  });
+  go.addEventListener('click', translate);
+  swapBtn.addEventListener('click', () => {
+    if (from.value === 'auto') return;
+    const f = from.value; from.value = to.value; to.value = f;
+    const t = src.value; src.value = lastResult; lastResult = t;
+    res.textContent = t || 'الترجمة ستظهر هنا';
+    res.classList.toggle('empty', !t);
+    if (src.value.trim()) schedule();
+  });
+  speakSrc.addEventListener('click', () => speak(src.value.trim(), from.value === 'auto' ? 'ar' : from.value));
+  speakRes.addEventListener('click', () => speak(lastResult, to.value));
+  copyBtn.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(lastResult); setStatus('تم النسخ ✓'); }
+    catch (e) { setStatus('تعذّر النسخ'); }
+  });
+  clearBtn.addEventListener('click', () => {
+    src.value = ''; lastResult = '';
+    res.textContent = 'الترجمة ستظهر هنا';
+    res.classList.add('empty');
+    speakSrc.disabled = speakRes.disabled = copyBtn.disabled = true;
+    setStatus('');
+  });
+})();
+</script>
+</body>
+</html>
