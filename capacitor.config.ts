@@ -11,7 +11,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  */
 const config: CapacitorConfig = {
   appId: 'com.mahdi.translatepro',
-  appName: 'Mahdi Translate Pro',
+  appName: 'Mahdi Translate',
   webDir: 'dist',
   // Serve the bundled app from assets — no network needed after install.
   server: {

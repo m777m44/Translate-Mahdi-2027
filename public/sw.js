@@ -1,15 +1,14 @@
-/* Service worker for Mahdi Translator Pro.
+/* Service worker for Mahdi Translate (v5 — focused instant translator).
  * Strategy:
- *  - app shell / static assets (incl. ONNX wasm binaries): cache-first with
- *    background revalidation, so the whole app + neural runtime work offline
+ *  - app shell / static assets: cache-first with background revalidation, so
+ *    the whole app (including the bundled offline dictionary) works offline
  *  - /api/*: never cached
- *  - AI model hosts (Hugging Face / mirrors): bypassed — Transformers.js owns
- *    model caching itself, avoiding duplicate multi-hundred-MB storage
+ *  - Tesseract OCR assets (worker/wasm/traineddata on CDNs): network first
+ *    with cache fallback, so image OCR keeps working offline after first use
  *  - other cross-origin (fonts, Tailwind CDN): network first, cache fallback
  */
-const CACHE = 'mahdi-translate-v4-1-1';
+const CACHE = 'mahdi-translate-v5';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon.svg'];
-const MODEL_HOSTS = ['huggingface.co', 'hf.co', 'hf-mirror.com', 'cdn-lfs'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -37,11 +36,8 @@ self.addEventListener('fetch', event => {
   const isApi = url.pathname.startsWith('/api/');
   const isSameOrigin = url.origin === self.location.origin;
 
-  // Never cache the translation API or Google auth calls.
+  // Never cache the translation API.
   if (isApi) return;
-
-  // Model downloads are managed by Transformers.js' own Cache API storage.
-  if (MODEL_HOSTS.some(host => url.hostname.includes(host))) return;
 
   if (isSameOrigin) {
     event.respondWith(

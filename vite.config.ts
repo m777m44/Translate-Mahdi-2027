@@ -19,26 +19,19 @@ export default defineConfig(() => {
         chunkSizeWarningLimit: 1600,
         rollupOptions: {
           output: {
-            // Keep the heavy on-device AI runtime in its own lazy chunk so the
-            // main app stays fast and only downloads it when a neural tool opens.
-            // Vite automatically emits the ONNX wasm binary next to this chunk
-            // and Transformers.js rewires wasmPaths to the bundled local asset.
+            // Tesseract OCR is only needed by the image-translation sheet, so
+            // Vite keeps it in a separate lazy chunk loaded on demand.
             manualChunks: {
-              'neural-runtime': ['@huggingface/transformers'],
+              tesseract: ['tesseract.js'],
             },
           },
         },
-      },
-      // Transformers.js / ONNX Runtime Web are loaded lazily at runtime;
-      // pre-bundling them in dev causes duplicated ESM instances, so exclude.
-      optimizeDeps: {
-        exclude: ['@huggingface/transformers'],
       },
       plugins: [react()],
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
-        }
-      }
+        },
+      },
     };
 });

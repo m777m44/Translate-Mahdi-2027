@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Theme, Language } from '../types.ts';
+import { isNativeApp, captureNativePhoto, pickNativePhoto } from '../platform.ts';
 
 interface ImageTranslateModalProps {
   isOpen: boolean;
@@ -74,6 +75,42 @@ export const ImageTranslateModal: React.FC<ImageTranslateModalProps> = ({
       streamRef.current = null;
     }
     setCameraActive(false);
+  };
+
+  /** Normalises any data URL into preview + raw base64 states. */
+  const applyDataUrl = (dataUrl: string) => {
+    setImagePreview(dataUrl);
+    setRawBase64(dataUrl.replace(/^data:image\/\w+;base64,/, ''));
+  };
+
+  /**
+   * Camera entry point:
+   *  - native Android shell → system camera via Capacitor (handles permissions)
+   *  - browser/PWA → live getUserMedia stream with a snapshot button
+   */
+  const openCamera = async () => {
+    if (isNativeApp()) {
+      const photo = await captureNativePhoto();
+      if (photo?.dataUrl) {
+        applyDataUrl(photo.dataUrl);
+        setActiveMode('camera');
+      }
+      return;
+    }
+    startCamera();
+  };
+
+  /** Gallery entry point with the same native/web split. */
+  const openPicker = async () => {
+    if (isNativeApp()) {
+      const photo = await pickNativePhoto();
+      if (photo?.dataUrl) {
+        applyDataUrl(photo.dataUrl);
+        setActiveMode('upload');
+      }
+      return;
+    }
+    fileInputRef.current?.click();
   };
 
   const startCamera = async (mode: 'environment' | 'user' = facingMode) => {
@@ -258,6 +295,7 @@ export const ImageTranslateModal: React.FC<ImageTranslateModalProps> = ({
               onClick={() => {
                 setActiveMode('upload');
                 stopCamera();
+                if (isNativeApp()) void openPicker();
               }}
               className={`px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all ${
                 activeMode === 'upload'
@@ -272,7 +310,7 @@ export const ImageTranslateModal: React.FC<ImageTranslateModalProps> = ({
             <button
               onClick={() => {
                 setActiveMode('camera');
-                startCamera();
+                void openCamera();
               }}
               className={`px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all ${
                 activeMode === 'camera'
@@ -344,7 +382,7 @@ export const ImageTranslateModal: React.FC<ImageTranslateModalProps> = ({
                     {isLoading ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>جاري قراءة النصوص وترجمتها بواسطة AI...</span>
+                        <span>جاري قراءة النصوص وترجمتها...</span>
                       </>
                     ) : (
                       <>
@@ -379,7 +417,7 @@ export const ImageTranslateModal: React.FC<ImageTranslateModalProps> = ({
                       <Camera className="w-8 h-8 mt-accent-text animate-pulse" />
                       <p className="text-xs mt-subtext">جاري بدء الكاميرا أو في انتظار الموافقة على الإذن...</p>
                       <button
-                        onClick={() => startCamera()}
+                        onClick={() => void openCamera()}
                         className="px-4 py-2 rounded-xl mt-btn-primary text-xs font-bold"
                       >
                         إعادة محاولة تشغيل الكاميرا
@@ -414,7 +452,7 @@ export const ImageTranslateModal: React.FC<ImageTranslateModalProps> = ({
               <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => void openPicker()}
                 className="border-2 border-dashed mt-hairline hover:border-[var(--mt-border-strong)] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-[var(--mt-surface)] transition-all text-center min-h-[260px]"
               >
                 <div className="p-4 rounded-2xl mt-accent-soft mt-accent-text border border-amber-500/20">

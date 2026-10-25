@@ -18,6 +18,7 @@ import { ConversationMessage, ThemeConfig, TtsSettings } from '../types.ts';
 import { LANGUAGES } from '../constants.ts';
 import { translateText, speakText } from '../geminiService.ts';
 import { translateOffline } from '../offlineEngine.ts';
+import { createSpeechSession, SpeechSession } from '../platform.ts';
 
 interface DualConversationModalProps {
   isOpen: boolean;
@@ -47,6 +48,17 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesTopRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const speechSessionRef = useRef<SpeechSession | null>(null);
+
+  // Release the microphone whenever the sheet closes.
+  useEffect(() => {
+    if (!isOpen) {
+      speechSessionRef.current?.stop();
+      speechSessionRef.current = null;
+      setIsListeningA(false);
+      setIsListeningB(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (sortOrder === 'chronological') {
@@ -140,55 +152,45 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
     speakText(translated, speakerALang, ttsSettings);
   };
 
-  const startVoiceInput = (speaker: 'A' | 'B') => {
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRec) {
-      alert('التعرف على الصوت غير مدعوم في متصفحك حالياً.');
+  const startVoiceInput = async (speaker: 'A' | 'B') => {
+    // Toggle off when the active speaker's mic is tapped again.
+    const active = speaker === 'A' ? isListeningA : isListeningB;
+    if (active) {
+      speechSessionRef.current?.stop();
+      speechSessionRef.current = null;
+      setIsListeningA(false);
+      setIsListeningB(false);
+      return;
+    }
+
+    const targetLangCode = speaker === 'A' ? speakerALang : speakerBLang;
+    if (speaker === 'A') setIsListeningA(true);
+    else setIsListeningB(true);
+
+    const session = await createSpeechSession({
+      onPartial: (t) => { if (speaker === 'A') setInputA(t); else setInputB(t); },
+      onFinal: (t) => { if (speaker === 'A') setInputA(t); else setInputB(t); },
+      onError: () => {
+        setIsListeningA(false);
+        setIsListeningB(false);
+      },
+      onEnd: () => {
+        setIsListeningA(false);
+        setIsListeningB(false);
+        speechSessionRef.current = null;
+      },
+    });
+
+    if (!session) {
+      alert('التعرف على الصوت غير مدعوم على هذا الجهاز حالياً.');
+      setIsListeningA(false);
+      setIsListeningB(false);
       return;
     }
 
     try {
-      const recognition = new SpeechRec();
-      const targetLangCode = speaker === 'A' ? speakerALang : speakerBLang;
-      const bcpCode = targetLangCode === 'ar' ? 'ar-SA' : targetLangCode === 'en' ? 'en-US' : (targetLangCode || 'ar-SA');
-      recognition.lang = bcpCode;
-      recognition.continuous = false;
-      recognition.interimResults = true;
-
-      if (speaker === 'A') setIsListeningA(true);
-      else setIsListeningB(true);
-
-      let finalTrans = '';
-
-      recognition.onresult = (event: any) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTrans += event.results[i][0].transcript;
-          } else {
-            interim += event.results[i][0].transcript;
-          }
-        }
-        const currentText = finalTrans || interim;
-        if (speaker === 'A') {
-          setInputA(currentText);
-        } else {
-          setInputB(currentText);
-        }
-      };
-
-      recognition.onerror = (e: any) => {
-        console.warn('Speech recognition error:', e);
-        if (speaker === 'A') setIsListeningA(false);
-        else setIsListeningB(false);
-      };
-
-      recognition.onend = () => {
-        if (speaker === 'A') setIsListeningA(false);
-        else setIsListeningB(false);
-      };
-
-      recognition.start();
+      speechSessionRef.current = session;
+      await session.start(targetLangCode);
     } catch (err) {
       console.error('Failed to start speech recognition:', err);
       setIsListeningA(false);

@@ -1,26 +1,23 @@
 {
-  "name": "Mahdi Translator Pro 4.1.1 — RTranslator-grade on-device AI",
-  "version": "4.1.1",
-  "description": "Advanced on-device neural translator (NLLB / Marian-Bergamot / Whisper via Transformers.js + ONNX Runtime Web), WalkieTalkie dual-language mode, WebRTC peer-to-peer translated conversation, document/subtitle translation, offline phrasebook with Leitner flashcards, 1544 themes and cloud sync. v4.1 adds a Google gtx keyless engine, mixed-script output guard with name transliteration in both online and offline modes, word-by-word breakdown analysis, wake lock, phrase of the day and a fully Android-responsive interface.",
+  "name": "Mahdi Translate 5.0 — instant Google-style translator",
+  "version": "5.0.0",
+  "description": "Focused instant translator inspired by Google Translate: instant text translation while typing, voice input (native Android speech plugin with Web Speech fallback), camera and image OCR translation with an on-device Tesseract fallback, a draggable floating translation window, offline dictionary mode, saved history and favourites, 1544 themes, PWA install, and hardware back-button with double-press to exit. No account, no cloud sync, no in-app APK button.",
   "requestFramePermissions": [
     "camera",
     "microphone"
   ],
   "majorCapabilities": [
-    "ON_DEVICE_NEURAL_TRANSLATION_NLLB",
-    "ON_DEVICE_SPEECH_RECOGNITION_WHISPER",
-    "WEBGPU_WASM_INFERENCE",
-    "WALKIETALKIE_DUAL_LANGUAGE_MODE",
-    "WEBRTC_P2P_ENCRYPTED_CONVERSATION",
-    "DOCUMENT_SUBTITLE_TRANSLATION",
-    "OFFLINE_PHRASEBOOK_FLASHCARDS",
-    "TRIGRAM_LANGUAGE_IDENTIFICATION",
-    "SERVER_SIDE_GEMINI_API",
-    "FIRESTORE_CLOUD_SYNC",
-    "GOOGLE_GTX_KEYLESS_FREE_ENGINE",
+    "INSTANT_GOOGLE_STYLE_TRANSLATION",
+    "ONLINE_FREE_ENGINES_WITH_OFFLINE_DICTIONARY_FALLBACK",
     "MIXED_SCRIPT_OUTPUT_GUARD",
-    "WORD_BY_WORD_BREAKDOWN",
-    "WAKE_LOCK_KEEP_SCREEN_ON",
-    "ANDROID_SAFE_AREA_RESPONSIVE_UI"
+    "NATIVE_ANDROID_SPEECH_RECOGNITION",
+    "CAMERA_AND_IMAGE_OCR_TRANSLATION",
+    "ON_DEVICE_TESSERACT_OCR_FALLBACK",
+    "DRAGGABLE_FLOATING_TRANSLATION_WINDOW",
+    "HARDWARE_BACK_DOUBLE_PRESS_EXIT",
+    "PWA_INSTALLABLE_MANIFEST",
+    "ANDROID_SAFE_AREA_RESPONSIVE_UI",
+    "THEME_ENGINE_1544_THEMES",
+    "WAKE_LOCK_KEEP_SCREEN_ON"
   ]
 }
