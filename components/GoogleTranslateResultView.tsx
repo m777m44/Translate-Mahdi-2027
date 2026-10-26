@@ -241,7 +241,7 @@ export const GoogleTranslateResultView: React.FC<GoogleTranslateResultViewProps>
           onBlur={() => setIsFocused(false)}
           placeholder="اكتب أو الصق أي نص… وستُترجم فوراً"
           rows={1}
-          className="mt-plain-input text-2xl sm:text-3xl font-bold tracking-wide leading-snug mt-heading"
+          className="mt-plain-input text-lg sm:text-xl font-bold tracking-wide leading-relaxed mt-heading"
           style={{ direction: sourceDir }}
           aria-label="النص الأصلي"
         />
@@ -329,7 +329,7 @@ export const GoogleTranslateResultView: React.FC<GoogleTranslateResultViewProps>
                 setCustomTargetText(shownTranslation);
                 setIsEditingTarget(true);
               }}
-              className="text-2xl sm:text-4xl font-extrabold tracking-wide leading-relaxed break-words cursor-text hover:opacity-90 transition-opacity mt-heading"
+              className="text-xl sm:text-2xl font-extrabold tracking-wide leading-relaxed break-words cursor-text hover:opacity-90 transition-opacity mt-heading"
               style={{ direction: targetDir, color: 'var(--mt-text)' }}
               title="انقر لتعديل الترجمة أو تحديد كلمات"
             >
@@ -357,7 +357,7 @@ export const GoogleTranslateResultView: React.FC<GoogleTranslateResultViewProps>
               </button>
 
               {showOptionsMenu && (
-                <div className="mt-elevated absolute right-0 bottom-full mb-2 w-52 p-1.5 z-30 text-xs space-y-1 mt-slide-up">
+                <div className="mt-pop-solid absolute right-0 bottom-full mb-2 w-52 p-1.5 z-[110] text-xs space-y-1 mt-slide-up">
                   <button onClick={handleShareClick} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[var(--mt-surface)] transition-colors">
                     <Share2 size={15} />
                     <span>مشاركة الترجمة</span>
