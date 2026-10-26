@@ -1,27 +1,18 @@
 # Android APK
 
-This folder holds the website-served Android package at the **fixed path**
-`public/downloads/mahdi-translate.apk`. The build workflow
-(`build-apk.yml`) overwrites this same file on every successful build, so the
-URL never changes while its content is always the newest build.
+Drop a prebuilt Android package here named `mahdi-translate.apk`.
 
-## الرابط الثابت الوحيد لأحدث إصدار
+When the file exists, the **تحميل APK / تثبيت** button in the app header becomes a
+direct download. When it does not exist, the button opens an explanation of the two
+supported ways to install:
 
-المستخدمون النهائيون يجب أن يستخدموا الرابط الدائم التالي — لا يتغيّر أبداً
-ويُعطي دائماً آخر إصدار رسمي منشور بكامل مميزاته وتحديثاته (تحويل 302 تلقائي):
+1. **PWA install (no build needed):** open the app in Chrome on Android, tap the menu
+   (⋮) → *Add to Home screen / Install app*. The app then launches full-screen and the
+   install button hides itself automatically (it detects `display-mode: standalone`).
+2. **Real signed APK:** package this project with
+   [PWABuilder](https://www.pwabuilder.com) (paste the deployed URL) or
+   [Capacitor](https://capacitorjs.com) (`npx cap add android`, then build in Android
+   Studio). Place the resulting `.apk` here as `mahdi-translate.apk`.
 
-```
-https://github.com/m777m44/Translate-Mahdi-2027/releases/latest/download/mahdi-translate-v4.apk
-```
-
-- اسم الأصل في كل GitHub Release مجمّد: `mahdi-translate-v4.apk` — إعادة
-  التسمية تكسر الرابط الدائم (انظر التحذير في `release-apk.yml`).
-- اسم ملف الموقع هنا مجمّد أيضاً: `mahdi-translate.apk`.
-- لا يوجد أي زر تحميل APK داخل التطبيق نفسه؛ التثبيت الداخلي عبر PWA
-  (InstallAppButton) فقط، وهذا الملف لصفحات الموقع/التحميل الخارجية.
-
-## التثبيت
-1. **PWA (بلا بناء):** افتح التطبيق في Chrome على أندرويد ← القائمة (⋮) ←
-   *إضافة إلى الشاشة الرئيسية / تثبيت التطبيق*.
-2. **APK:** ثبّت الملف من الرابط الثابت أعلاه فوق الإصدار السابق (معرّف الحزمة
-   `com.mahdi.translatepro` ثابت).
+The service worker (`/sw.js`) and `manifest.webmanifest` in `public/` make the PWA
+installable and offline-capable out of the box.

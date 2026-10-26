@@ -15,23 +15,6 @@ no in-app APK button.
 
 ---
 
-## 🔗 رابط التحميل الثابت — أحدث إصدار دائماً
-
-**رابط واحد لا يتغيّر أبداً** — يُعطي دائماً أحدث إصدار رسمي من التطبيق بكامل
-مميزاته وتحديثاته مهما تغيّر رقم الإصدار:
-
-```
-https://github.com/m777m44/Translate-Mahdi-2027/releases/latest/download/mahdi-translate-v4.apk
-```
-
-- ثابت مع كل الإصدارات (v5.1.1، v5.2، …) — لا حاجة لمشاركة رابط جديد في كل مرة.
-- يحوّلك GitHub تلقائياً (HTTP 302) إلى ملف APK الخاص بآخر إصدار منشور.
-- اسم ملف الـAPK داخل كل إصدار **مجمّد** `mahdi-translate-v4.apk` في سير عمل
-  النشر (`release-apk.yml`) لضمان استمرار الرابط للأبد، ولا يجوز تغييره.
-- نفس الملف يُنشر أيضاً بمسار ثابت للموقع عبر `public/downloads/mahdi-translate.apk`.
-
----
-
 ## © الحقوق / Rights & Ownership
 
 > **جميع الحقوق محفوظة © 2027 — MAHDI**
@@ -114,9 +97,7 @@ npm run dev                    # http://localhost:3000
 **GitHub Actions:** ادفع الفرع فينفّذ `.github/workflows/build-apk.yml` البناء
 ويرفع `mahdi-translate.apk` كـ Artifact وينشره في `public/downloads/` للموقع.
 ولإنشاء إصدار رسمي: ادفع وسماً `v*` فينفّذ `release-apk.yml` وينشئ
-[GitHub Release](https://github.com/m777m44/Translate-Mahdi-2027/releases) مع ملف APK
-بالاسم المجمّد `mahdi-translate-v4.apk`، فيصبح متاحاً فوراً عبر
-[رابط التحميل الثابت](#-رابط-التحميل-الثابت--أحدث-إصدار-دائما) الذي لا يتغيّر.
+[GitHub Release](https://github.com/m777m44/Translate-Mahdi-2027/releases) مع ملف APK.
 
 **محلياً:**
 ```bash
