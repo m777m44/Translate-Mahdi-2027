@@ -72,30 +72,13 @@ jobs:
           "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" \
             "platforms;android-36" "build-tools;36.0.0" || true
 
-      - name: Ensure stable signing keystore is present
-        # Guards against silently regressing to ephemeral per-runner debug keys
-        # (which cause "App not installed" when updating an existing install).
-        run: |
-          test -f android/keystore/mahdi.p12 || { echo "::error::stable keystore android/keystore/mahdi.p12 missing"; exit 1; }
-          test -f android/keystore/keystore.properties || { echo "::error::keystore.properties missing"; exit 1; }
-
       - name: Build debug APK
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Verify APK signing identity
-        # The certificate SHA-256 printed here must match the release workflow's
-        # fingerprint — branch builds and releases share one signing identity.
-        run: |
-          APKSIGNER="$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
-          "$APKSIGNER" verify --print-certs android/app/build/outputs/apk/debug/app-debug.apk | sed -n '1,4p'
-
       - name: Rename APK
-        # FROZEN FILENAME — the website serves this fixed path and the permanent
-        # "latest" release link (releases/latest/download/mahdi-translate-v4.apk)
-        # relies on the release asset name staying unchanged too. Do not rename.
         run: |
           mkdir -p release
           cp android/app/build/outputs/apk/debug/app-debug.apk release/mahdi-translate.apk

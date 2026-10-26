@@ -7,7 +7,7 @@
  *    with cache fallback, so image OCR keeps working offline after first use
  *  - other cross-origin (fonts, Tailwind CDN): network first, cache fallback
  */
-const CACHE = 'mahdi-translate-v5-1-2';
+const CACHE = 'mahdi-translate-v5-1-1';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon.svg'];
 
 self.addEventListener('install', event => {

@@ -1,16 +1,5 @@
 apply plugin: 'com.android.application'
 
-// Stable signing identity (android/keystore/keystore.properties + mahdi.p12).
-// Committed in-repo so every CI runner signs with the SAME key — otherwise
-// Android rejects updates over an existing install with "App not installed".
-// If the file is absent (e.g. local dev that deleted it), Gradle falls back to
-// its default per-machine debug signing instead of failing the build.
-def keystorePropsFile = rootProject.file("keystore/keystore.properties")
-def keystoreProps = new Properties()
-if (keystorePropsFile.exists()) {
-    keystoreProps.load(new FileInputStream(keystorePropsFile))
-}
-
 android {
     namespace = "com.mahdi.translatepro"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -18,8 +7,8 @@ android {
         applicationId "com.mahdi.translatepro"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 10
-        versionName "5.1.2"
+        versionCode 9
+        versionName "5.1.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -27,27 +16,8 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    signingConfigs {
-        mahdi {
-            if (keystorePropsFile.exists()) {
-                storeFile file(keystoreProps['storeFile'])
-                storePassword keystoreProps['storePassword']
-                keyAlias keystoreProps['keyAlias']
-                keyPassword keystoreProps['keyPassword']
-                storeType keystoreProps['storeType']
-            }
-        }
-    }
     buildTypes {
-        debug {
-            if (keystorePropsFile.exists()) {
-                signingConfig signingConfigs.mahdi
-            }
-        }
         release {
-            if (keystorePropsFile.exists()) {
-                signingConfig signingConfigs.mahdi
-            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
