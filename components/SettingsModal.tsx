@@ -1,590 +1,149 @@
-import React, { useState } from 'react';
-import { 
-  X, 
-  Trash2, 
-  RotateCcw, 
-  Palette, 
-  Wifi, 
-  WifiOff, 
-  Sliders, 
-  Search, 
-  Check, 
-  ZoomIn, 
-  Volume2, 
-  Sparkles,
-  Wand2,
-  Layers,
-  SlidersHorizontal,
-  Sun,
-  Moon,
-  Flame,
-  Droplets,
-  Activity,
-  Maximize2
+import React from 'react';
+import {
+  X, Wifi, WifiOff, Zap, Power, Volume2, Type, Palette, HardDrive,
+  Trash2, Info, ChevronLeft,
 } from 'lucide-react';
-import { ThemeConfig, TtsSettings, TranslationHistoryItem, ZoomLevel, CustomThemeSettings } from '../types.ts';
-import { createCustomTheme } from '../themeRegistry.ts';
-import { ThemeGallery } from './ThemeGallery.tsx';
+import { ThemeConfig, TtsSettings } from '../types.ts';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentTheme: ThemeConfig;
-  onSelectTheme: (theme: ThemeConfig) => void;
-  history: TranslationHistoryItem[];
-  onClearHistory: () => void;
-  onRestoreLastTranslation: () => void;
-  lastItem: TranslationHistoryItem | null;
+  theme: ThemeConfig;
   forceOffline: boolean;
-  onToggleForceOffline: (val: boolean) => void;
-  zoom: ZoomLevel;
-  onChangeZoom: (zoom: ZoomLevel) => void;
+  onToggleForceOffline: (v: boolean) => void;
+  instantTranslate: boolean;
+  onToggleInstant: (v: boolean) => void;
+  keepScreenOn: boolean;
+  onToggleKeepScreenOn: (v: boolean) => void;
   ttsSettings: TtsSettings;
-  onChangeTtsSettings: (settings: TtsSettings) => void;
+  onChangeTtsSettings: (s: TtsSettings) => void;
   availableVoices: string[];
+  onOpenThemes: () => void;
+  onOpenZoom: () => void;
+  onOpenPacks: () => void;
+  historyCount: number;
+  onClearHistory: () => void;
 }
 
+const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ value, onChange }) => (
+  <button
+    role="switch"
+    aria-checked={value}
+    onClick={() => onChange(!value)}
+    className="relative w-11 h-6 rounded-full transition-colors shrink-0"
+    style={{ background: value ? 'var(--mt-primary)' : 'var(--mt-surface-2, var(--mt-surface))', border: '1px solid var(--mt-border)' }}
+  >
+    <span
+      className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all"
+      style={{ insetInlineStart: value ? 'calc(100% - 1.375rem)' : '0.125rem' }}
+    />
+  </button>
+);
+
+const Row: React.FC<{ icon: React.ReactNode; title: string; desc?: string; children: React.ReactNode }> = ({ icon, title, desc, children }) => (
+  <div className="flex items-center gap-3 py-3 border-b last:border-0" style={{ borderColor: 'var(--mt-border)' }}>
+    <div className="p-2 rounded-xl mt-accent-soft shrink-0">{icon}</div>
+    <div className="flex-1 min-w-0">
+      <div className="text-xs font-extrabold">{title}</div>
+      {desc && <div className="text-[10px] mt-subtext mt-0.5 leading-relaxed">{desc}</div>}
+    </div>
+    {children}
+  </div>
+);
+
 export const SettingsModal: React.FC<SettingsModalProps> = ({
-  isOpen,
-  onClose,
-  currentTheme,
-  onSelectTheme,
-  history,
-  onClearHistory,
-  onRestoreLastTranslation,
-  lastItem,
-  forceOffline,
-  onToggleForceOffline,
-  zoom,
-  onChangeZoom,
-  ttsSettings,
-  onChangeTtsSettings,
-  availableVoices,
+  isOpen, onClose, forceOffline, onToggleForceOffline,
+  instantTranslate, onToggleInstant, keepScreenOn, onToggleKeepScreenOn,
+  ttsSettings, onChangeTtsSettings, availableVoices,
+  onOpenThemes, onOpenZoom, onOpenPacks, historyCount, onClearHistory,
 }) => {
-  const [activeTab, setActiveTab] = useState<'themes' | 'customizer' | 'general' | 'audio'>('themes');
-  const [confirmClear, setConfirmClear] = useState<boolean>(false);
-
-  // Custom Theme Builder state
-  const [customSettings, setCustomSettings] = useState<CustomThemeSettings>({
-    accentColor: '#f59e0b',
-    cardOpacity: 12,
-    glassBlur: 20,
-    borderRadius: 24,
-    bgStyle: 'aurora',
-    glowAnimation: true,
-  });
-
   if (!isOpen) return null;
 
-  const handleApplyCustomTheme = () => {
-    const newTheme = createCustomTheme(customSettings);
-    onSelectTheme(newTheme);
-  };
-
-  const navItems = [
-    {
-      id: 'themes' as const,
-      icon: Palette,
-      title: 'محرك الثيمات',
-      desc: '1500+ تصميماً راقياً',
-    },
-    {
-      id: 'customizer' as const,
-      icon: Wand2,
-      title: 'تخصيص الثيم',
-      desc: 'ثيم زجاجي ومتحرك',
-    },
-    {
-      id: 'general' as const,
-      icon: RotateCcw,
-      title: 'السجل والتحجيم',
-      desc: 'الذاكرة وحجم العرض',
-    },
-    {
-      id: 'audio' as const,
-      icon: Volume2,
-      title: 'الصوت والنطق',
-      desc: 'الأصوات والسرعة',
-    },
-  ];
+  const navBtn = 'mt-btn mt-btn-ghost rounded-xl px-3 py-2 text-[11px] font-bold flex items-center gap-1.5';
 
   return (
-    <div className="mt-modal-backdrop">
-      <div 
-        className={`w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl border ${currentTheme.border} ${currentTheme.card} ${currentTheme.text} shadow-2xl overflow-hidden transition-all duration-300`}
-        dir="rtl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b mt-hairline mt-surface-soft">
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-2xl ${currentTheme.primary} shadow-md`}>
-              <Sliders size={20} />
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">إعدادات Mahdi Translate Pro</h2>
-              <p className="text-xs opacity-60">محرك الثيمات (1500+ تصميم) • تخصيص متقدم • السجل والترجمة دون إنترنت</p>
-            </div>
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-[var(--mt-surface)] transition-colors opacity-70 hover:opacity-100"
-            title="إغلاق الإعدادات"
-          >
-            <X size={20} />
-          </button>
+    <div className="mt-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label="الإعدادات">
+      <div className="mt-modal w-full max-w-lg" dir="rtl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: 'var(--mt-border)' }}>
+          <h2 className="text-base font-extrabold mt-heading">الإعدادات</h2>
+          <button onClick={onClose} className="mt-icon-btn p-2" aria-label="إغلاق"><X size={20} /></button>
         </div>
 
-        {/* Horizontal Smooth Nav Bar with Icons on Top and Small Labels Below */}
-        <div className="px-4 sm:px-6 pt-3 pb-2 border-b mt-hairline mt-surface-soft">
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1 snap-x">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex flex-col items-center justify-center min-w-[125px] sm:min-w-[145px] py-2.5 px-3 rounded-2xl transition-all duration-200 snap-start select-none border ${
-                    isActive
-                      ? `${currentTheme.primary} border-transparent shadow-lg shadow-amber-500/20 scale-[1.02]`
-                      : 'mt-surface-soft  border-transparent opacity-65 hover:opacity-100 hover:bg-[var(--mt-surface)] '
-                  }`}
-                >
-                  <Icon size={18} className="mb-1" />
-                  <span className="text-xs font-black leading-tight text-center">{item.title}</span>
-                  <span className="text-[10px] opacity-75 leading-none mt-0.5 text-center truncate max-w-[120px]">
-                    {item.desc}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <div className="flex-1 overflow-y-auto mt-scroll px-5 py-2" style={{ maxHeight: '72vh' }}>
+          <Row icon={forceOffline ? <WifiOff size={17} /> : <Wifi size={17} />} title="وضع بدون إنترنت" desc="الاعتماد على القاموس المحلي فقط">
+            <Toggle value={forceOffline} onChange={onToggleForceOffline} />
+          </Row>
 
-        {/* Modal Body with Custom Smooth Scroll */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-          
-          {/* TAB 1: THEME ENGINE — 1500+ themes, paginated for performance */}
-          {activeTab === 'themes' && (
-            <ThemeGallery variant="compact" maxHeightClass="max-h-[52vh]" />
-          )}
+          <Row icon={<Zap size={17} />} title="ترجمة فورية أثناء الكتابة" desc="تظهر الترجمة تلقائياً دون الضغط على زر">
+            <Toggle value={instantTranslate} onChange={onToggleInstant} />
+          </Row>
 
-          {/* TAB 2: CUSTOM THEME BUILDER (Wand2) */}
-          {activeTab === 'customizer' && (
-            <div className="space-y-6">
-              <div className="p-4 rounded-3xl border mt-hairline bg-amber-500/5 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-2xl mt-btn-primary">
-                    <Sparkles size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm sm:text-base">استوديو تخصيص الثيمات الشفافة والمتحركة</h3>
-                    <p className="text-xs opacity-70">
-                      صمم ثيمك الزجاجي الشفاف الخاص، واختر الألوان ونسبة الزجاج والانحناء فورياً
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleApplyCustomTheme}
-                  className={`px-5 py-2.5 rounded-2xl text-xs font-bold ${currentTheme.primary} shadow-lg hover:brightness-110 active:scale-95 transition-all`}
-                >
-                  تطبيق الثيم المخصص ✓
-                </button>
-              </div>
+          <Row icon={<Power size={17} />} title="إبقاء الشاشة مضاءة" desc="تمنع انطفاء الشاشة أثناء الجلسات الطويلة">
+            <Toggle value={keepScreenOn} onChange={onToggleKeepScreenOn} />
+          </Row>
 
-              {/* Theme Live Preview Card */}
-              <div className="p-5 rounded-3xl border mt-hairline mt-surface-soft space-y-3">
-                <span className="text-xs font-bold opacity-60 block">معاينة حية فورية للثيم:</span>
-                <div 
-                  className={`p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col gap-3 shadow-xl`}
-                  style={{
-                    borderRadius: `${customSettings.borderRadius}px`,
-                    borderColor: `${customSettings.accentColor}50`,
-                    backgroundColor: `rgba(255, 255, 255, ${customSettings.cardOpacity / 100})`,
-                    backdropFilter: `blur(${customSettings.glassBlur}px)`,
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: customSettings.accentColor }} />
-                      بطاقة ترجمة زجاجية تجريبية
-                    </span>
-                    <span className="text-[10px] font-mono opacity-60">Glass Luxury v2</span>
-                  </div>
-                  <p className="text-sm font-medium leading-relaxed opacity-90">
-                    هذا نموذج حي لكيفية ظهور النصوص والبطاقات الزجاجية الشفافة ذات الانحناء السلس.
-                  </p>
-                  <div className="flex items-center gap-2 pt-2">
-                    <button
-                      className="px-4 py-1.5 rounded-xl text-xs font-bold text-black"
-                      style={{ backgroundColor: customSettings.accentColor }}
-                    >
-                      زر رئيسي مخصص
-                    </button>
-                    <button className="px-4 py-1.5 rounded-xl text-xs font-bold mt-surface-soft border mt-hairline">
-                      زر ثانوي
-                    </button>
-                  </div>
-                </div>
-              </div>
+          <Row icon={<Palette size={17} />} title="الثيمات والمظهر">
+            <button className={navBtn} onClick={onOpenThemes}>فتح المكتبة <ChevronLeft size={14} /></button>
+          </Row>
 
-              {/* Accent Color Palette */}
-              <div className="p-5 rounded-3xl border mt-hairline mt-surface-soft space-y-3">
-                <label className="text-xs font-bold opacity-75 block">اختر لون التمييز الأساسي (Accent Color):</label>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5">
-                  {[
-                    { color: '#f59e0b', name: 'ذهب إمبراطوري' },
-                    { color: '#06b6d4', name: 'أورورا سماوي' },
-                    { color: '#10b981', name: 'زمردي نقي' },
-                    { color: '#3b82f6', name: 'ياقوت أزرق' },
-                    { color: '#a855f7', name: 'أميثيست بنفسجي' },
-                    { color: '#f43f5e', name: 'كوارتز وردي' },
-                    { color: '#fb923c', name: 'غروب برتقالي' },
-                    { color: '#ffffff', name: 'بلور ناصع' },
-                  ].map((item) => (
-                    <button
-                      key={item.color}
-                      onClick={() => setCustomSettings(prev => ({ ...prev, accentColor: item.color }))}
-                      className={`p-2 rounded-2xl border flex flex-col items-center gap-1.5 transition-all ${
-                        customSettings.accentColor === item.color
-                          ? 'mt-hairline ring-2 ring-[var(--mt-accent)]/50 scale-105 mt-surface-soft '
-                          : 'mt-hairline hover:scale-102 opacity-70 hover:opacity-100'
-                      }`}
-                    >
-                      <div className="w-7 h-7 rounded-xl shadow-md" style={{ backgroundColor: item.color }} />
-                      <span className="text-[10px] font-bold text-center leading-tight truncate w-full">{item.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <Row icon={<Type size={17} />} title="حجم الخط">
+            <button className={navBtn} onClick={onOpenZoom}>ضبط الحجم <ChevronLeft size={14} /></button>
+          </Row>
 
-              {/* Background Atmosphere Styles */}
-              <div className="p-5 rounded-3xl border mt-hairline mt-surface-soft space-y-3">
-                <label className="text-xs font-bold opacity-75 block">اختر نمط الخلفية والأجواء:</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {[
-                    { id: 'aurora', name: 'أورورا القطبية المتحركة', desc: 'سماوي ونيلي عميق' },
-                    { id: 'obsidian', name: 'الزجاج الليلي الداكن', desc: 'أسود وفضي فخم' },
-                    { id: 'emerald', name: 'الغابة الزمردية', desc: 'أخضر ملكي داكن' },
-                    { id: 'crystal', name: 'البلور الصافي', desc: 'رمادي زجاجي ناصع' },
-                    { id: 'sunset', name: 'الغروب الشفقي', desc: 'بنفسجي وقرمزي' },
-                    { id: 'royal-dark', name: 'الملكي الأسود', desc: 'فخامة عميقة' },
-                  ].map((style) => (
-                    <button
-                      key={style.id}
-                      onClick={() => setCustomSettings(prev => ({ ...prev, bgStyle: style.id as any }))}
-                      className={`p-3 rounded-2xl border text-right transition-all ${
-                        customSettings.bgStyle === style.id
-                          ? `${currentTheme.primary} shadow-md`
-                          : 'mt-hairline mt-surface-soft  opacity-70 hover:opacity-100'
-                      }`}
-                    >
-                      <div className="font-bold text-xs">{style.name}</div>
-                      <div className="text-[10px] opacity-75">{style.desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <Row icon={<HardDrive size={17} />} title="حزم اللغات الأوفلاين">
+            <button className={navBtn} onClick={onOpenPacks}>إدارة الحزم <ChevronLeft size={14} /></button>
+          </Row>
 
-              {/* Sliders: Opacity, Blur, Radius */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Opacity */}
-                <div className="p-4 rounded-2xl border mt-hairline mt-surface-soft space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold">شفافية البطاقات:</span>
-                    <span className="font-mono mt-accent-text font-bold">{customSettings.cardOpacity}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="4"
-                    max="50"
-                    value={customSettings.cardOpacity}
-                    onChange={(e) => setCustomSettings(prev => ({ ...prev, cardOpacity: parseInt(e.target.value, 10) }))}
-                    className="w-full accent-amber-500 cursor-pointer h-1.5 mt-surface-soft rounded-lg appearance-none"
-                  />
-                </div>
-
-                {/* Blur */}
-                <div className="p-4 rounded-2xl border mt-hairline mt-surface-soft space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold">قوة الضبابية الزجاجية:</span>
-                    <span className="font-mono mt-accent-text font-bold">{customSettings.glassBlur}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="5"
-                    max="40"
-                    value={customSettings.glassBlur}
-                    onChange={(e) => setCustomSettings(prev => ({ ...prev, glassBlur: parseInt(e.target.value, 10) }))}
-                    className="w-full accent-amber-500 cursor-pointer h-1.5 mt-surface-soft rounded-lg appearance-none"
-                  />
-                </div>
-
-                {/* Border Radius */}
-                <div className="p-4 rounded-2xl border mt-hairline mt-surface-soft space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold">انحناء الزوايا:</span>
-                    <span className="font-mono mt-accent-text font-bold">{customSettings.borderRadius}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="8"
-                    max="36"
-                    value={customSettings.borderRadius}
-                    onChange={(e) => setCustomSettings(prev => ({ ...prev, borderRadius: parseInt(e.target.value, 10) }))}
-                    className="w-full accent-amber-500 cursor-pointer h-1.5 mt-surface-soft rounded-lg appearance-none"
-                  />
-                </div>
-              </div>
+          <div className="py-3 border-b" style={{ borderColor: 'var(--mt-border)' }}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl mt-accent-soft shrink-0"><Volume2 size={17} /></div>
+              <div className="text-xs font-extrabold">إعدادات الصوت والنطق</div>
             </div>
-          )}
-
-          {/* TAB 3: GENERAL & HISTORY & ZOOM CONTROL */}
-          {activeTab === 'general' && (
-            <div className="space-y-5">
-              {/* PRECISION NUMERIC ZOOM CONTROL */}
-              <div className="p-5 rounded-3xl border mt-hairline mt-surface-soft space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-base flex items-center gap-2">
-                      <ZoomIn size={18} className="mt-accent-text" />
-                      <span>التحكم المباشر في التكبير والتصغير (إدخال الرقم)</span>
-                    </h3>
-                    <p className="text-xs opacity-60">
-                      يمكنك كتابة أي رقم تريده بحرية تامة من 50% إلى 250% للتحكم الكامل في حجم الواجهة
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="50"
-                      max="250"
-                      value={zoom}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10);
-                        if (!isNaN(val)) onChangeZoom(Math.max(50, Math.min(250, val)));
-                      }}
-                      className="w-20 text-center py-1.5 px-2 rounded-xl mt-surface-soft border mt-hairline font-black mt-accent-text text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mt-accent)]"
-                    />
-                    <span className="text-xs font-bold opacity-60">%</span>
-                  </div>
-                </div>
-
-                {/* Slider */}
+            <div className="mt-3 space-y-3 pe-11">
+              <label className="block text-[10px] mt-subtext font-bold">
+                الصوت
+                <select
+                  value={ttsSettings.voiceName}
+                  onChange={(e) => onChangeTtsSettings({ ...ttsSettings, voiceName: e.target.value })}
+                  className="mt-input w-full mt-1 rounded-xl text-xs py-2"
+                >
+                  {availableVoices.map((v) => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </label>
+              <label className="block text-[10px] mt-subtext font-bold">
+                السرعة: {ttsSettings.rate?.toFixed(1) ?? '1.0'}x
                 <input
-                  type="range"
-                  min="50"
-                  max="250"
-                  value={zoom}
-                  onChange={(e) => onChangeZoom(parseInt(e.target.value, 10))}
-                  className="w-full accent-amber-500 cursor-pointer h-2 mt-surface-soft rounded-lg appearance-none"
+                  type="range" min={0.5} max={1.8} step={0.1}
+                  value={ttsSettings.rate ?? 1}
+                  onChange={(e) => onChangeTtsSettings({ ...ttsSettings, rate: Number(e.target.value) })}
+                  className="w-full mt-1"
                 />
-
-                {/* Quick Presets */}
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                  {[75, 85, 100, 115, 130, 150].map((val) => (
-                    <button
-                      key={val}
-                      onClick={() => onChangeZoom(val)}
-                      className={`py-2 rounded-xl text-xs font-bold transition-all ${
-                        zoom === val
-                          ? `${currentTheme.primary} shadow-md`
-                          : 'mt-surface-soft  opacity-70 hover:opacity-100'
-                      }`}
-                    >
-                      {val}%
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Restore last translation */}
-              <div className="p-5 rounded-3xl border mt-hairline mt-surface-soft">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="font-bold text-base flex items-center gap-2 mb-1">
-                      <RotateCcw size={18} className="mt-accent-text" />
-                      <span>استدعاء آخر ترجمة</span>
-                    </h3>
-                    <p className="text-xs opacity-60 mb-3">
-                      استرجاع النص والترجمة الأخيرة مباشرة إلى حقل الإدخال بنقرة واحدة
-                    </p>
-                    {lastItem ? (
-                      <div className="p-3 rounded-2xl mt-surface-soft border mt-hairline text-xs space-y-1 max-w-md">
-                        <div className="font-semibold truncate">الأصل: "{lastItem.sourceText}"</div>
-                        <div className="opacity-75 truncate mt-accent-text">الترجمة: "{lastItem.translatedText}"</div>
-                      </div>
-                    ) : (
-                      <span className="text-xs opacity-40 italic">لا توجد ترجمة سابقة في الذاكرة حالياً.</span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => {
-                      onRestoreLastTranslation();
-                      onClose();
-                    }}
-                    disabled={!lastItem}
-                    className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all disabled:opacity-30 disabled:pointer-events-none ${currentTheme.primary}`}
-                  >
-                    استدعاء الآن
-                  </button>
-                </div>
-              </div>
-
-              {/* Offline mode toggle */}
-              <div className="p-5 rounded-3xl border mt-hairline mt-surface-soft">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-2xl ${forceOffline ? 'bg-orange-500 ' : 'mt-accent-soft text-green-500'}`}>
-                      {forceOffline ? <WifiOff size={22} /> : <Wifi size={22} />}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-base">وضع الترجمة المحلية (بدون إنترنت)</h3>
-                      <p className="text-xs opacity-60">
-                        {forceOffline 
-                          ? 'الوضع المحلي مفعّل: يعتمد التطبيق كلياً على القاموس الداخلي فائق السرعة دون استهلاك بيانات أو اتصال شبكي.'
-                          : 'الوضع التلقائي: يتم استخدام نموذج Gemini المتطور وعند انقطاع الإنترنت يتحول التطبيق تلقائياً للترجمة المحلية.'}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => onToggleForceOffline(!forceOffline)}
-                    className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all ${
-                      forceOffline 
-                        ? 'bg-orange-500 ' 
-                        : `${currentTheme.secondary}`
-                    }`}
-                  >
-                    {forceOffline ? 'مفعّل محلياً ✓' : 'تفعيل الإلزام المحلي'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Clear History */}
-              <div className="p-5 rounded-3xl border border-red-500/20 bg-red-500/5">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h3 className="font-bold text-base mt-danger-text flex items-center gap-2">
-                      <Trash2 size={18} />
-                      <span>مسح سجل الترجمات بالكامل</span>
-                    </h3>
-                    <p className="text-xs opacity-70">
-                      يوجد لديك حالياً <strong className="mt-danger-text">{history.length}</strong> عنصر في السجل المحفوظ محلياً.
-                    </p>
-                  </div>
-                  {confirmClear ? (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          onClearHistory();
-                          setConfirmClear(false);
-                        }}
-                        className="px-4 py-2 rounded-xl bg-red-600 font-bold text-xs hover:bg-red-700 transition-colors"
-                      >
-                        نعم، امسح الكل
-                      </button>
-                      <button
-                        onClick={() => setConfirmClear(false)}
-                        className="px-3 py-2 rounded-xl mt-surface-soft text-xs font-bold hover:bg-[var(--mt-surface)]"
-                      >
-                        إلغاء
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmClear(true)}
-                      disabled={history.length === 0}
-                      className="px-5 py-2.5 rounded-2xl border border-red-500/30 mt-danger-text hover:bg-red-500 hover:text-[var(--mt-text)] font-bold text-xs transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                    >
-                      مسح السجل الآن
-                    </button>
-                  )}
-                </div>
-              </div>
+              </label>
+              <label className="block text-[10px] mt-subtext font-bold">
+                طبقة الصوت: {ttsSettings.pitch?.toFixed(1) ?? '1.0'}
+                <input
+                  type="range" min={0.5} max={1.8} step={0.1}
+                  value={ttsSettings.pitch ?? 1}
+                  onChange={(e) => onChangeTtsSettings({ ...ttsSettings, pitch: Number(e.target.value) })}
+                  className="w-full mt-1"
+                />
+              </label>
             </div>
-          )}
+          </div>
 
-          {/* TAB 4: AUDIO & SPEECH */}
-          {activeTab === 'audio' && (
-            <div className="space-y-5">
-              <div className="p-5 rounded-3xl border mt-hairline mt-surface-soft space-y-4">
-                <h3 className="font-bold text-base flex items-center gap-2">
-                  <Volume2 size={18} className="mt-accent-text" />
-                  <span>محرك تحويل النص إلى كلام (TTS)</span>
-                </h3>
-                <p className="text-xs opacity-60">
-                  يعتمد التطبيق على نطق ذكي وسلس يدعم جميع اللغات واللهجات مع إمكانية تعديل سرعة الصوت والنبرة.
-                </p>
+          <Row icon={<Trash2 size={17} />} title={`مسح السجل (${historyCount})`} desc="حذف كل الترجمات المحفوظة على هذا الجهاز">
+            <button className="mt-btn rounded-xl px-3 py-2 text-[11px] font-bold" style={{ color: 'var(--mt-danger)' }} onClick={onClearHistory}>
+              مسح
+            </button>
+          </Row>
 
-                {/* Voice Selection */}
-                {availableVoices.length > 0 && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold opacity-75">اختر الصوت المفضل:</label>
-                    <select
-                      value={ttsSettings.voiceName}
-                      onChange={(e) => onChangeTtsSettings({ ...ttsSettings, voiceName: e.target.value })}
-                      className="w-full p-3 rounded-2xl mt-surface-soft border mt-hairline text-xs font-bold focus:outline-none"
-                    >
-                      <option value="">الصوت الافتراضي الذكي</option>
-                      {availableVoices.map((v) => (
-                        <option key={v} value={v} className="mt-surface-soft">
-                          {v}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Speed / Rate */}
-                <div className="space-y-2 pt-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-bold">سرعة النطق:</span>
-                    <span className="font-mono mt-accent-text font-bold">{ttsSettings.rate}x</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="1.5"
-                    step="0.1"
-                    value={ttsSettings.rate}
-                    onChange={(e) => onChangeTtsSettings({ ...ttsSettings, rate: parseFloat(e.target.value) })}
-                    className="w-full accent-amber-500 cursor-pointer h-1.5 mt-surface-soft rounded-lg appearance-none"
-                  />
-                </div>
-
-                {/* Pitch */}
-                <div className="space-y-2 pt-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-bold">نبرة الصوت:</span>
-                    <span className="font-mono mt-accent-text font-bold">{ttsSettings.pitch}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="1.5"
-                    step="0.1"
-                    value={ttsSettings.pitch}
-                    onChange={(e) => onChangeTtsSettings({ ...ttsSettings, pitch: parseFloat(e.target.value) })}
-                    className="w-full accent-amber-500 cursor-pointer h-1.5 mt-surface-soft rounded-lg appearance-none"
-                  />
-                </div>
-              </div>
+          <div className="flex items-center gap-3 py-4">
+            <div className="p-2 rounded-xl mt-accent-soft shrink-0"><Info size={17} /></div>
+            <div className="text-[10px] mt-subtext leading-relaxed">
+              <div className="font-extrabold mt-heading mb-0.5">مهدي للترجمة — Mahdi Translate</div>
+              <div>الإصدار 5.1.1 · MAHDI © 2027 · ترجمة فورية أونلاين وأوفلاين</div>
             </div>
-          )}
-
-        </div>
-
-        {/* Modal Footer */}
-        <div className="p-4 border-t mt-hairline mt-surface-soft flex items-center justify-between">
-          <span className="text-[11px] opacity-50 font-medium">
-            Mahdi Translate Pro • جميع التغييرات تُحفظ تلقائياً في ذاكرة المتصفح
-          </span>
-          <button
-            onClick={onClose}
-            className={`px-6 py-2 rounded-2xl text-xs font-bold ${currentTheme.primary} shadow-md hover:brightness-110 active:scale-95 transition-all`}
-          >
-            إغلاق
-          </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 {
   "name": "mahdi-translate-pro",
   "private": true,
-  "version": "0.0.0",
+  "version": "5.1.1",
   "type": "module",
   "scripts": {
     "dev": "tsx --env-file-if-exists=.env server.ts",
@@ -10,7 +10,7 @@
     "lint": "tsc --noEmit",
     "icons": "node scripts/generate-icons.mjs",
     "cap:add:android": "cap add android",
-    "cap:sync": "npm run build && cap sync android",
+    "cap:sync": "npm run build && node -e \"require('fs').rmSync('dist/downloads',{recursive:true,force:true})\" && cap sync android",
     "apk:debug": "npm run cap:sync && cd android && ./gradlew assembleDebug",
     "apk:release": "npm run cap:sync && cd android && ./gradlew assembleRelease",
     "verify:themes": "tsx scripts/verify-themes.ts",
@@ -19,14 +19,19 @@
     "verify": "npm run verify:themes && npm run verify:app"
   },
   "dependencies": {
+    "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/camera": "^8.2.6",
     "@capacitor/core": "^8.5.2",
     "@google/genai": "^1.39.0",
     "express": "^5.2.1",
     "firebase": "^12.19.0",
     "lucide-react": "^0.563.0",
+    "qrcode-generator": "^2.0.4",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "tesseract.js": "^5.1.1"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.2",

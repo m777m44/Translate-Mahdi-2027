@@ -1,11 +1,26 @@
 {
-  "name": "Remix Mahdi Translate Pro",
-  "description": "An advanced AI-powered translation application with real-time text, voice, and image translation, featuring custom themes and offline capabilities.",
+  "name": "Translate Mahdi 2027 v5.1 — instant Google-style translator",
+  "version": "5.1.1",
+  "description": "Focused instant translator inspired by Google Translate: instant text translation while typing, native Android speech recognition with Web Speech fallback, camera and image OCR translation with an on-device Tesseract fallback, a native SYSTEM_ALERT_WINDOW floating translation window that stays above every app (draggable bubble + WebView panel) plus an in-page floating window on web/PWA, robust local TTS, offline dictionary mode, saved history and favourites, 1544 themes, PWA install, and hardware back-button handling with double-press to exit. No account, no cloud sync, no in-app APK button.",
   "requestFramePermissions": [
     "camera",
     "microphone"
   ],
   "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+    "INSTANT_GOOGLE_STYLE_TRANSLATION",
+    "ONLINE_FREE_ENGINES_WITH_OFFLINE_DICTIONARY_FALLBACK",
+    "MIXED_SCRIPT_OUTPUT_GUARD",
+    "NATIVE_ANDROID_SPEECH_RECOGNITION",
+    "ROBUST_LOCAL_TTS_VOICE_READINESS",
+    "CAMERA_AND_IMAGE_OCR_TRANSLATION",
+    "ON_DEVICE_TESSERACT_OCR_FALLBACK",
+    "SYSTEM_ALERT_WINDOW_NATIVE_FLOATING_OVERLAY",
+    "DRAGGABLE_FLOATING_BUBBLE_AND_WEBVIEW_PANEL",
+    "IN_PAGE_FLOATING_WINDOW_FOR_WEB_PWA",
+    "HARDWARE_BACK_STACK_WITH_DOUBLE_PRESS_EXIT",
+    "PWA_INSTALLABLE_MANIFEST",
+    "ANDROID_SAFE_AREA_RESPONSIVE_UI",
+    "THEME_ENGINE_1544_THEMES",
+    "WAKE_LOCK_KEEP_SCREEN_ON"
   ]
 }

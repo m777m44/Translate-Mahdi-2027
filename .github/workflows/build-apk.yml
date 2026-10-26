@@ -12,6 +12,18 @@ on:
     paths:
       - 'android/**'
       - 'capacitor.config.ts'
+      - 'package.json'
+      - 'vite.config.ts'
+      - 'App.tsx'
+      - 'platform.ts'
+      - 'ocr.ts'
+      - 'transliterate.ts'
+      - 'offlineEngine.ts'
+      - 'geminiService.ts'
+      - 'constants.ts'
+      - 'components/**'
+      - 'public/**'
+      - 'styles/**'
       - '.github/workflows/build-apk.yml'
 
 jobs:
@@ -30,12 +42,20 @@ jobs:
           node-version: 22
 
       # Repo convention is bun.lock (package-lock.json is gitignored), so use
-      # a plain install rather than `npm ci` (which requires a lockfile).
+      # a plain install. --ignore-scripts skips onnxruntime-node's native
+      # download (browser builds only need onnxruntime-web); esbuild is rebuilt
+      # explicitly afterwards so the Vite build keeps working.
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          npm install --no-audit --no-fund --ignore-scripts
+          npm rebuild esbuild
 
       - name: Build web assets
         run: npm run build
+
+      # The website-only APK payload must not be nested inside the app itself.
+      - name: Strip website-only download payload from app bundle
+        run: rm -rf dist/downloads
 
       - name: Sync Capacitor (copy dist into Android shell)
         run: npx cap sync android

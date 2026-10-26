@@ -107,5 +107,59 @@ applyTheme(getThemeById('sig-alabaster'), {});
 check('switching theme updates the primary colour', written['--mt-primary'] !== before, `${before} → ${written['--mt-primary']}`);
 check('light theme flips the colour scheme flag', (g as any).document.documentElement.dataset.mtDark === 'false');
 
+// 6. v5 focused suite — every shipped modal must render while open -----------
+const fakeTranslate = async (t: string) => `[t] ${t}`;
+const noopAsync = async () => {};
+const theme = getThemeById('sig-mahdi-gold');
+const renderModal = async (path: string, props: Record<string, unknown>) => {
+  try {
+    const mod = await import(path);
+    const key = Object.keys(mod).find((k) => k.endsWith('Modal'))
+      || Object.keys(mod).find((k) => typeof mod[k] === 'function');
+    const Component = mod[key!];
+    const out = renderToStaticMarkup(React.createElement(Component, props));
+    check(`${path.split('/').pop()} renders open`, out.length > 100, `${out.length} chars`);
+  } catch (err: any) {
+    check(`${path.split('/').pop()} renders open`, false, String(err?.stack || err).split('\n').slice(0, 3).join(' | '));
+  }
+};
+
+const sharedModalProps = {
+  isOpen: true,
+  onClose: noop,
+  theme,
+  translateFn: fakeTranslate,
+  onSpeak: noop,
+  onToast: noop,
+};
+const tts = { voiceName: 'Kore', rate: 1, pitch: 1 };
+await renderModal('../components/SettingsModal.tsx', {
+  isOpen: true, onClose: noop, theme, forceOffline: false, onToggleForceOffline: noop,
+  instantTranslate: true, onToggleInstant: noop, keepScreenOn: false, onToggleKeepScreenOn: noop,
+  ttsSettings: tts, onChangeTtsSettings: noop, availableVoices: ['Kore'],
+  onOpenThemes: noop, onOpenZoom: noop, onOpenPacks: noop, historyCount: 3, onClearHistory: noop,
+});
+await renderModal('../components/OfflinePacksModal.tsx', { isOpen: true, onClose: noop, theme });
+await renderModal('../components/DualConversationModal.tsx', {
+  isOpen: true, onClose: noop, theme, ttsSettings: tts, forceOffline: false,
+});
+await renderModal('../components/FloatingTranslateWindow.tsx', {
+  ...sharedModalProps, currentTheme: theme, languages: [], onTranslate: fakeTranslate, onCopy: noop,
+});
+await renderModal('../components/ImageTranslateModal.tsx', {
+  isOpen: true, onClose: noop, currentTheme: theme, languages: [], targetLang: 'ar',
+  onTranslateImage: noopAsync, onApplyText: noop, onSpeak: noop, onCopy: noop,
+});
+await renderModal('../components/StarredTranslationsModal.tsx', {
+  isOpen: true, onClose: noop, favorites: [], onToggleFavorite: noop,
+  onSelectTranslation: noop, onSpeak: noop, onCopy: noop, theme,
+});
+await renderModal('../components/OverlayPermissionGuide.tsx', {
+  isOpen: true, onClose: noop, onActivated: noop, onShowToast: noop,
+});
+await renderModal('../components/ZoomModal.tsx', {
+  isOpen: true, onClose: noop, zoom: 100, onChangeZoom: noop, currentTheme: theme,
+});
+
 console.log(`\n${failures === 0 ? '✅ ALL APP CHECKS PASSED' : `❌ ${failures} CHECK(S) FAILED`}\n`);
 process.exit(failures === 0 ? 0 : 1);

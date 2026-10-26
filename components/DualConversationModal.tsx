@@ -18,6 +18,7 @@ import { ConversationMessage, ThemeConfig, TtsSettings } from '../types.ts';
 import { LANGUAGES } from '../constants.ts';
 import { translateText, speakText } from '../geminiService.ts';
 import { translateOffline } from '../offlineEngine.ts';
+import { createSpeechSession, SpeechSession } from '../platform.ts';
 
 interface DualConversationModalProps {
   isOpen: boolean;
@@ -47,6 +48,17 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesTopRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const speechSessionRef = useRef<SpeechSession | null>(null);
+
+  // Release the microphone whenever the sheet closes.
+  useEffect(() => {
+    if (!isOpen) {
+      speechSessionRef.current?.stop();
+      speechSessionRef.current = null;
+      setIsListeningA(false);
+      setIsListeningB(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (sortOrder === 'chronological') {
@@ -140,55 +152,45 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
     speakText(translated, speakerALang, ttsSettings);
   };
 
-  const startVoiceInput = (speaker: 'A' | 'B') => {
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRec) {
-      alert('التعرف على الصوت غير مدعوم في متصفحك حالياً.');
+  const startVoiceInput = async (speaker: 'A' | 'B') => {
+    // Toggle off when the active speaker's mic is tapped again.
+    const active = speaker === 'A' ? isListeningA : isListeningB;
+    if (active) {
+      speechSessionRef.current?.stop();
+      speechSessionRef.current = null;
+      setIsListeningA(false);
+      setIsListeningB(false);
+      return;
+    }
+
+    const targetLangCode = speaker === 'A' ? speakerALang : speakerBLang;
+    if (speaker === 'A') setIsListeningA(true);
+    else setIsListeningB(true);
+
+    const session = await createSpeechSession({
+      onPartial: (t) => { if (speaker === 'A') setInputA(t); else setInputB(t); },
+      onFinal: (t) => { if (speaker === 'A') setInputA(t); else setInputB(t); },
+      onError: () => {
+        setIsListeningA(false);
+        setIsListeningB(false);
+      },
+      onEnd: () => {
+        setIsListeningA(false);
+        setIsListeningB(false);
+        speechSessionRef.current = null;
+      },
+    });
+
+    if (!session) {
+      alert('التعرف على الصوت غير مدعوم على هذا الجهاز حالياً.');
+      setIsListeningA(false);
+      setIsListeningB(false);
       return;
     }
 
     try {
-      const recognition = new SpeechRec();
-      const targetLangCode = speaker === 'A' ? speakerALang : speakerBLang;
-      const bcpCode = targetLangCode === 'ar' ? 'ar-SA' : targetLangCode === 'en' ? 'en-US' : (targetLangCode || 'ar-SA');
-      recognition.lang = bcpCode;
-      recognition.continuous = false;
-      recognition.interimResults = true;
-
-      if (speaker === 'A') setIsListeningA(true);
-      else setIsListeningB(true);
-
-      let finalTrans = '';
-
-      recognition.onresult = (event: any) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTrans += event.results[i][0].transcript;
-          } else {
-            interim += event.results[i][0].transcript;
-          }
-        }
-        const currentText = finalTrans || interim;
-        if (speaker === 'A') {
-          setInputA(currentText);
-        } else {
-          setInputB(currentText);
-        }
-      };
-
-      recognition.onerror = (e: any) => {
-        console.warn('Speech recognition error:', e);
-        if (speaker === 'A') setIsListeningA(false);
-        else setIsListeningB(false);
-      };
-
-      recognition.onend = () => {
-        if (speaker === 'A') setIsListeningA(false);
-        else setIsListeningB(false);
-      };
-
-      recognition.start();
+      speechSessionRef.current = session;
+      await session.start(targetLangCode);
     } catch (err) {
       console.error('Failed to start speech recognition:', err);
       setIsListeningA(false);
@@ -287,13 +289,14 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
               </>
             )}
 
-            <button 
+            <button
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] hover:text-[var(--mt-text)] transition-all text-xs font-bold flex items-center gap-1.5 active:scale-95"
+              className="mt-dual-action min-h-10 px-3.5 py-1.5 rounded-xl mt-surface-soft hover:bg-[var(--mt-surface)] hover:text-[var(--mt-text)] transition-all text-xs font-bold active:scale-95"
               title="إغلاق والعودة"
+              aria-label="إغلاق"
             >
               <X className="w-4 h-4" />
-              <span>إغلاق</span>
+              <span className="mt-topbar-label">إغلاق</span>
             </button>
           </div>
         </div>
@@ -413,9 +416,9 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                 />
                 <button
                   onClick={() => startVoiceInput('A')}
-                  className={`p-2 rounded-xl text-xs font-bold transition-all ${
-                    isListeningA 
-                      ? 'bg-[var(--mt-danger)]  animate-pulse shadow-lg ' 
+                  className={`mt-dual-action min-w-10 min-h-10 p-2 rounded-xl text-xs font-bold transition-all ${
+                    isListeningA
+                      ? 'bg-[var(--mt-danger)]  animate-pulse shadow-lg '
                       : 'mt-btn-primary hover:bg-amber-400'
                   }`}
                   title="تحدث بالصوت"
@@ -425,7 +428,7 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                 <button
                   onClick={handleSendSpeakerA}
                   disabled={!inputA.trim() || isTranslating}
-                  className="p-2 rounded-xl mt-accent-soft hover:bg-amber-500/30 mt-accent-text disabled:opacity-30 text-xs font-bold"
+                  className="mt-dual-action min-w-10 min-h-10 p-2 rounded-xl mt-accent-soft hover:bg-amber-500/30 mt-accent-text disabled:opacity-30 text-xs font-bold"
                   title="إرسال وترجمة"
                 >
                   <Send className="w-3.5 h-3.5 rotate-180" />
@@ -452,9 +455,9 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                 />
                 <button
                   onClick={() => startVoiceInput('B')}
-                  className={`p-2 rounded-xl text-xs font-bold transition-all ${
-                    isListeningB 
-                      ? 'bg-[var(--mt-danger)]  animate-pulse shadow-lg ' 
+                  className={`mt-dual-action min-w-10 min-h-10 p-2 rounded-xl text-xs font-bold transition-all ${
+                    isListeningB
+                      ? 'bg-[var(--mt-danger)]  animate-pulse shadow-lg '
                       : 'bg-indigo-500  hover:bg-indigo-400'
                   }`}
                   title="تحدث بالصوت"
@@ -464,7 +467,7 @@ export const DualConversationModal: React.FC<DualConversationModalProps> = ({
                 <button
                   onClick={handleSendSpeakerB}
                   disabled={!inputB.trim() || isTranslating}
-                  className="p-2 rounded-xl mt-accent-soft hover:bg-indigo-500/30 text-indigo-300 disabled:opacity-30 text-xs font-bold"
+                  className="mt-dual-action min-w-10 min-h-10 p-2 rounded-xl mt-accent-soft hover:bg-indigo-500/30 text-indigo-300 disabled:opacity-30 text-xs font-bold"
                   title="إرسال وترجمة"
                 >
                   <Send className="w-3.5 h-3.5 rotate-180" />

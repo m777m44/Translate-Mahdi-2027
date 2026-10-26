@@ -1,12 +1,17 @@
-# 🌐 مهدي — Mahdi Translator Pro
+# 🌐 Translate Mahdi 2027 (5.1) — مهدي للترجمة
 
-> تطبيق ترجمة احترافي ذكي وشامل — ترجمة فورية أثناء الكتابة، أكثر من **1544 ثيم**،
-> ترجمة صوتية وصور ومحادثة، حزم لغات تعمل بدون إنترنت، مزامنة سحابية مربوطة بالحساب،
-> وتطبيق Android قابل للتثبيت (APK / PWA).
+> مترجم فوري مركّز وأنيق بأسلوب **ترجمة جوجل**: ترجمة فورية أثناء الكتابة،
+> إدخال صوتي، ترجمة صور وكاميرا، **نافذة عائمة قابلة للسحب**، عمل بدون إنترنت،
+> أكثر من **1544 ثيم**، وتطبيق Android قابل للتثبيت (APK / PWA) — بدون حساب
+> وبدون أي أزرار مشتتة.
 
-**A professional, intelligent, all-in-one translator** — instant translation while you
-type, **1544 themes**, voice / image / conversation translation, offline language packs,
-account-linked cloud sync (Firestore), and an installable Android app (APK / PWA).
+**v5.1 — native SYSTEM_ALERT_WINDOW floating window above every app, robust local TTS, ordered top bar, horizontal chat button. A focused, Google-Translate-style instant translator** — instant debounced
+translation, native Android speech recognition with a Web Speech fallback,
+camera/gallery image translation with server vision plus an on-device Tesseract
+OCR fallback, a draggable floating window, offline dictionary mode, history and
+favourites, 1544 themes, hardware back-button handling with double-press to
+exit, and an installable Android app (APK / PWA). No account, no cloud sync,
+no in-app APK button.
 
 ---
 
@@ -16,131 +21,94 @@ account-linked cloud sync (Firestore), and an installable Android app (APK / PWA
 > هذا المشروع وكل محتوياته (الكود، الثيمات، الشعارات، الأيقونات، التسمية) ملكية فكرية
 > بإسم **MAHDI**. يُمنع نسخ أو إعادة نشر أو بيع أي جزء منه دون إذن كتابي صريح.
 >
-> **All rights reserved © 2027 — MAHDI.** This project and all of its contents (code,
-> themes, logos, icons, naming) are the intellectual property of **MAHDI**. No part may
-> be copied, republished, or sold without explicit written permission.
+> **All rights reserved © 2027 — MAHDI.** No part may be copied, republished, or
+> sold without explicit written permission.
 
 ---
 
 ## ✨ المميزات / Features
 
-### ترجمة فورية ودقيقة / Instant, accurate translation
-- **ترجمة لحظية أثناء الكتابة** (بدون زر) مع محرّك عصبي (Gemini) ومحرّك محلي احتياطي.
-- **ترجمة أونلاين بدون مفتاح:** إذا لم يتوفر Gemini يجرّب الخادم تلقائياً محرّكات مجانية
-  (MyMemory ثم LibreTranslate) فتعمل الترجمة عبر الإنترنت حتى بدون أي مفاتيح.
-- **محرّك أوفلاين ذكي:** مطابقة عبارات كاملة، تحويل الأرقام للصيغة المحلية (٠-٩)،
-  الحفاظ على علامات الترقيم، وقاموس واسع + لهجات.
-- **كشف تلقائي** للغة المصدر مع عرض اسم اللغة المكتشفة.
-- **مطابقة عبارات كاملة** (وليس كلمة-بكلمة) في المحرك المحلي: الجمل الكاملة تُترجم،
-  وليس كلمة واحدة فقط.
-- دعم **اللهجات** (عراقي، مصري، شامي، مغربي، خليجي) و**المجالات** (طبي، قانوني، تقني،
-  ديني) و**النبرة** (رسمي، ودّود…).
-- **100+ لغة** للاختيار، مع تبديل فوري للاتجاه (RTL/LTR).
+### ⚡ ترجمة فورية
+- ترجمة تلقائية أثناء الكتابة بمهلة تكيّفية (300ms أونلاين / 140ms أوفلاين).
+- ترتيب المحركات الأونلاين: Google gtx المجاني بدون مفتاح ← MyMemory ← LibreTranslate،
+  مع سقوط تلقائي للقاموس المحلي عند انقطاع الإنترنت.
+- **ضمان عدم خروج نص بخط مختلط**: أي كلمة غير مترجمة تُنقحَر لخط اللغة الهدف
+  (`ensureTargetScript` + `beautifyArabic`) في كل المسارات.
+- كشف لغة تلقائي، عكس اللغتين بلمسة، معجم فوري بزمن استجابة صفر للعبارات الشائعة.
 
-### واجهة بمئات الثيمات / 1544-theme UI
-- **1544 ثيم** موزعة على 16 فئة، تُطبَّق فوراً على **كل** أجزاء التطبيق.
-- وضع **زجاجي شفاف** للوضع الكلاسيكي، وتحكم كامل بالتباين والحركة والتوهج والتكبير.
-- مكتبة ثيمات قابلة للبحث والمعاينة (`Ctrl/Cmd + K`).
+### 🎙️ الصوت والمحادثة
+- تعرّف صوتي أصلي على أندرويد عبر `@capacitor-community/speech-recognition`
+  (يعمل داخل WebView حيث لا تتوفر Web Speech API)، مع سقوط سلس لـ Web Speech في المتصفح.
+- نطق TTS عصبي من الخادم مع سقوط تلقائي لـ SpeechSynthesis (يعمل أوفلاين).
+- وضع محادثة ثنائية اللغة بين متحدثين بترجمة متبادلة ونطق تلقائي.
 
-### أدوات متقدمة / Advanced tools
-- 🎙️ **ترجمة صوتية** حيّة (تعرّف كلام مستمر) + **نطق** الترجمة (TTS).
-- 📷 **ترجمة الصور** (OCR) وإدراج النص المترجم.
-- ✍️ **رسم/كتابة يدوية** لإدخال النص.
-- 💬 **وضع المحادثة** ثنائي اللغة.
-- ⭐ **المفضلة** وسجل ترجمات كامل قابل للبحث والحذف.
-- 🪟 **نافذة ترجمة عائمة** حرة: تُسحب من أي مكان، تغيير حجمها من **كل الحواف والزوايا
-  الثماني**، تصغير/تكبير/إغلاق، وتحفظ موضعها وحجمها.
+### 📷 الصور والكاميرا
+- كاميرا حية في المتصفح (getUserMedia) وكاميرا النظام الأصلية عبر `@capacitor/camera`
+  مع إدارة أذونات صحيحة على أندرويد.
+- مسار ترجمة بصري عبر الخادم، وسقوط مضمون لـ **Tesseract OCR على الجهاز**
+  (عربي + إنجليزي) ثم ترجمة النص المستخرج — فلا تفشل ترجمة الصور بصمت أبداً.
 
-### يعمل بدون إنترنت / Offline
-- محرّك محلي غني (قواميس + عبارات + لهجات) يعمل فوراً بدون اتصال.
-- حزم لغات قابلة للتنزيل (`offlinePacksManager`).
-- تطبيق PWA يعمل Offline عبر Service Worker.
+### 🪟 النافذة العائمة
+- **على أندرويد:** نافذة أصلية عبر إذن `SYSTEM_ALERT_WINDOW` وخدمة مقدمة — فقاعة قابلة
+  للسحب + لوحة WebView مستقلة تطفو فوق كل التطبيقات الأخرى ولا تختفي عند مغادرة التطبيق،
+  مع دليل عربي لمنح الإذن (`OverlayPermissionGuide`).
+- **على الويب/PWA:** نافذة ترجمة صغيرة قابلة للسحب والتصغير والتكبير والتحجيم داخل الصفحة،
+  مع حفظ مكانها وحجمها محلياً.
 
-### مزامنة سحابية / Cloud sync (Firestore)
-- تسجيل دخول **Google حقيقي** عبر Firebase Auth.
-- نسخ احتياطي لسجل الترجمات والمفضلة في **Firestore** مربوط بحسابك
-  (`users/{uid}/history`) ليتوفر عبر كل أجهزتك.
-- دمج ثنائي الاتجاه (الأحدث يفوز) وقواعد أمان تمنع وصول أي مستخدم لبيانات غير بياناته.
-- وضع **محلي تلقائي** أنيق إذا لم تُضبط مفاتيح Firebase (لا ينكسر التطبيق أبداً).
+### 🧭 التنقل والأجهزة
+- زر الرجوع في كل النطاقات: إغلاق النوافذ أولاً، ثم **ضغطتان متتاليتان للخروج**
+  من التطبيق (`@capacitor/app`) مع رسالة تأكيد.
+- إبقاء الشاشة مضاءة (Wake Lock)، تثبيت PWA بلا أي زر APK داخل التطبيق،
+  تصميم متجاوب مع safe-area وأهداف لمس ≥44px.
 
-### تطبيق Android / Installable app
-- **PWA** قابل للتثبيت من المتصفح (يعمل ملء الشاشة ويختفي زر التثبيت تلقائياً).
-- غلاف **Capacitor** أصلي يبني **APK** حقيقي متوافق مع Android 7.0+ (يغطي Xiaomi /
-  Poco / Huawei / Samsung / Oppo / Vivo وعموم أجهزة العالم).
-- زر «تحميل APK / تثبيت» يختفي تلقائياً عند التشغيل كتطبيق مثبّت.
+### 📚 المحلي والثيمات
+- سجل ومفضلة محليان، حزم لغات أوفلاين، كتابة بخط اليد، 1544 ثيم، وتكبير الخط.
 
 ---
 
 ## 🚀 التشغيل / Getting started
 
 ```bash
-npm install
-cp .env.example .env      # ضع GEMINI_API_KEY ومفاتيح Firebase (اختياري)
-npm run dev               # http://localhost:3000
-curl localhost:3000/api/health   # {"status":"ok",...}
+npm install --ignore-scripts
+npm rebuild esbuild
+cp .env.example .env           # مفتاح Gemini اختياري (التطبيق يعمل بدونه)
+npm run dev                    # http://localhost:3000
 ```
 
-التطبيق يعمل **بدون** أي مفاتيح (يعود للمحرك المحلي). المفاتيح تفعّل الترجمة العصبية
-والمزامنة السحابية فقط.
+التطبيق يعمل **بدون** أي مفاتيح: المحركات المجانية والقاموس المحلي تكفي،
+والمفتاح يفعّل الترجمة البصرية/السحابية الأعلى جودة فقط.
 
-### أوامر التطوير / Scripts
+### أوامر / Scripts
 
 | الأمر | الوصف |
 |---|---|
-| `npm run dev` | تشغيل خادم التطوير (يحمّل `.env` تلقائياً إن وجد) |
-| `npm run build` | بناء الواجهة + الخادم للإنتاج |
-| `npm run start` | تشغيل النسخة المبنية |
-| `npm run verify` | فحوصات الثيمات + فحص عرض التطبيق (SSR) |
-| `npm run lint` / `npm run check` | فحص الأنواع / كل الفحوصات |
-| `npm run icons` | توليد أيقونات PNG من SVG |
+| `npm run dev` | تشغيل خادم التطوير |
+| `npm run build` | بناء الواجهة + خادم Express (حزمة OCR كسولة منفصلة) |
+| `npm run lint` | فحص الأنواع TypeScript |
+| `npm run verify` | فحوصات الثيمات + عرض كل شاشات التطبيق |
+| `npm run icons` | توليد كل الأيقونات (PWA + Android) من `public/icons/source-3d.png` |
 | `npm run cap:sync` | بناء الويب ونسخه لغلاف Android |
-| `npm run apk:debug` / `apk:release` | بناء APK (يتطلب Android SDK) |
+| `npm run apk:debug` | بناء APK محلياً (يتطلب Android SDK + JDK 21) |
 
 ---
 
-## 📱 بناء APK حقيقي / Building the real APK
+## 📱 بناء APK / Building the APK
 
-الغلاف الأصلي موجود في مجلد `android/` (Capacitor 8، `minSdk 24` ≈ Android 7.0+).
+**GitHub Actions:** ادفع الفرع فينفّذ `.github/workflows/build-apk.yml` البناء
+ويرفع `mahdi-translate.apk` كـ Artifact وينشره في `public/downloads/` للموقع.
+ولإنشاء إصدار رسمي: ادفع وسماً `v*` فينفّذ `release-apk.yml` وينشئ
+[GitHub Release](https://github.com/m777m44/Translate-Mahdi-2027/releases) مع ملف APK.
 
-**طريقة 1 — GitHub Actions (الأسهل، بدون تثبيت أي شيء):**
-ادفع الفرع وسينفّذ `.github/workflows/build-apk.yml` البناء على خوادم GitHub ويحمّل
-ملف `mahdi-translate.apk` كـ Artifact، أو أنشئ Release وأرفقه. رابِع التحميل يصبح على
-GitHub Releases («موقع ويب للتحميل»).
-
-**طريقة 2 — محلياً (يتطلب Android SDK + JDK 21):**
+**محلياً:**
 ```bash
-npm run build && npx cap sync android
+npm run cap:sync
 cd android && ./gradlew assembleDebug
-# الناتج: android/app/build/outputs/apk/debug/app-debug.apk
+# android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-**طريقة 3 — PWABuilder:** الصق رابط موقعك المنشور في
-[pwabuilder.com](https://www.pwabuilder.com) واحصل على APK/TWA جاهز.
-
-**نشر الملف على موقعك:** انسخ الـ APK إلى `public/downloads/mahdi-translate.apk`
-فيصبح زر «تحميل APK» في التطبيق تحميلاً مباشراً من موقعك.
-
-> لتوجيه الـ APK إلى خلفيتك (الـ API) عدّل `DEFAULT_REMOTE_API` في `apiBase.ts` أو
-> اضبط `localStorage['mahdi_api_base']` إلى رابط موقعك. بدون ذلك يعمل الـ APK بالمحرك
-> المحلي Offline بالكامل.
-
----
-
-## ☁️ تفعيل المزامنة السحابية / Enabling cloud sync
-
-1. أنشئ مشروع Firebase وفعّل **Authentication (Google)** و **Firestore**.
-2. انسخ مفاتيح الويب إلى `.env` (انظر `.env.example`).
-3. انشر القواعد: `firebase deploy --only firestore:rules` (الملف `firestore.rules`).
-4. سجّل الدخول من زر الحساب داخل التطبيق → تُزامَن بياناتك عبر الأجهزة.
-
----
-
-## 🧪 الفحص / Verification
-
-```bash
-npm run verify   # 1544 ثيم + فحص عرض كامل للتطبيق
-npm run check    # verify + lint + build
-```
+إضافات Capacitor المستخدمة: `@capacitor/app` (زر الرجوع/الخروج)،
+`@capacitor/camera` (الكاميرا/المعرض)، `@capacitor-community/speech-recognition`
+(التعرف الصوتي الأصلي).
 
 ---
 
@@ -148,15 +116,32 @@ npm run check    # verify + lint + build
 
 | الملف | الدور |
 |---|---|
-| `App.tsx` | الغلاف الرئيسي والثيمات والاختصارات |
-| `offlineEngine.ts` | المحرك المحلي (مطابقة عبارات + لهجات) |
-| `geminiService.ts` | الترجمة العصبية متعددة النماذج |
-| `cloudSyncService.ts` | Firebase Auth + Firestore |
-| `themeEngine/Registry/Patterns/Context` | نظام 1544 ثيم |
-| `components/` | النافذة العائمة، المصادقة، التثبيت، الثيمات… |
+| `App.tsx` | الواجهة الرئيسية بأسلوب ترجمة جوجل وسلسلة المحركات الموحدة |
+| `platform.ts` | جسر الأجهزة: تعرف صوتي موحّد، زر الرجوع، الخروج، الكاميرا الأصلية |
+| `floatingWindow.ts` | جسر الإضافة الأصلية للنافذة العائمة (أذونات + show/hide) مع بديل ويب |
+| `tts.ts` | نطق محلي موثوق: انتظار الأصوات، إلغاء النطق السابق، مطابقة اللغة |
+| `public/floating.html` | صفحة اللوحة العائمة المستقلة داخل الـWebView فوق التطبيقات |
+| `android/.../FloatingWindowPlugin.java` + `FloatingWindowService.java` | إضافة كاباسيتور وخدمة TYPE_APPLICATION_OVERLAY |
+| `ocr.ts` | استخراج النص من الصور عبر Tesseract (تحميل كسول عند الحاجة) |
+| `transliterate.ts` | كشف الخط، النقحرة، ضمان خط الهدف، تجميل العربية |
+| `offlineEngine.ts` | القاموس المحلي + الترجمة كلمة-بكلمة |
+| `geminiService.ts` | عميل الخادم (ترجمة نص/صور، TTS بسقوط محلي) |
+| `server.ts` | Express: محركات مجانية (Google gtx/MyMemory/LibreTranslate) + Gemini |
+| `components/FloatingTranslateWindow.tsx` | النافذة العائمة القابلة للسحب والتحجيم |
+| `components/ImageTranslateModal.tsx` | الكاميرا/المعرض + OCR والترجمة البصرية |
+| `components/DualConversationModal.tsx` | محادثة ثنائية اللغة |
+| `components/GoogleTranslateResultView.tsx` | سطح الترجمة الرئيسي |
+| `themeEngine.ts` وغيرها | نظام 1544 ثيم |
 | `android/` | غلاف Capacitor لبناء APK |
-| `public/` | PWA: manifest + service worker + أيقونات |
-| `server.ts` | Express API (`/api/translate`, `/api/config`…) |
+
+---
+
+## ⚖️ إسناد المشاريع مفتوحة المصدر / Open-source attribution
+
+- **[Tesseract.js](https://github.com/naptha/tesseract.js)** (Apache-2.0) — OCR على الجهاز.
+- **[Capacitor](https://capacitorjs.com/)** (MIT) وإضافات المجتمع (App / Camera / Speech Recognition).
+- **[Lucide](https://lucide.dev/)** (ISC) — الأيقونات.
+- بيانات اللغات والقواميس مدمجة ومحلية؛ لا أي اعتماد على حساب أو مزامنة سحابية.
 
 ---
 

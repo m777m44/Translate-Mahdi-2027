@@ -1,31 +1,26 @@
 {
-  "name": "Mahdi Translate Pro — مترجم مهدي",
-  "short_name": "Mahdi Translate",
-  "description": "مترجم احترافي متعدد اللغات بواجهة عربية مع 1544 ثيم ومزامنة سحابية للسجل",
+  "name": "Translate Mahdi 2027 — مهدي للترجمة",
+  "short_name": "مهدي 2027",
+  "description": "مترجم فوري بأسلوب ترجمة جوجل — ترجمة نص وصوت وصور أونلاين وأوفلاين، نافذة عائمة، 1544 ثيم، ويعمل بدون إنترنت",
   "lang": "ar",
   "dir": "rtl",
   "scope": "/",
   "start_url": "/?source=pwa",
   "id": "mahdi-translate-pro",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "any",
   "background_color": "#070a12",
-  "theme_color": "#070a12",
-  "categories": ["productivity", "utilities"],
+  "theme_color": "#0B2B4D",
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "icons": [
-    {
-      "src": "/icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-maskable.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    },
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
@@ -43,6 +38,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -51,7 +52,24 @@
       "short_name": "ترجمة",
       "description": "افتح المترجم مباشرة",
       "url": "/?action=translate",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "النافذة العائمة",
+      "short_name": "عائمة",
+      "description": "افتح نافذة الترجمة العائمة",
+      "url": "/?action=floating",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ],
   "screenshots": [
@@ -60,7 +78,8 @@
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Mahdi Translate Pro"
+      "label": "Mahdi Translate"
     }
-  ]
+  ],
+  "version": "5.1.1"
 }

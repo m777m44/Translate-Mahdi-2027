@@ -16,13 +16,22 @@ export default defineConfig(() => {
           : undefined,
       },
       build: {
-        chunkSizeWarningLimit: 900,
+        chunkSizeWarningLimit: 1600,
+        rollupOptions: {
+          output: {
+            // Tesseract OCR is only needed by the image-translation sheet, so
+            // Vite keeps it in a separate lazy chunk loaded on demand.
+            manualChunks: {
+              tesseract: ['tesseract.js'],
+            },
+          },
+        },
       },
       plugins: [react()],
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
-        }
-      }
+        },
+      },
     };
 });

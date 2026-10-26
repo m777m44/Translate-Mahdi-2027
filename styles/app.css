@@ -678,3 +678,242 @@ body { font-family: var(--mt-font-body); }
     transition-duration: .01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   v4.1 — Android / small-screen responsive system
+   Safe-area aware, touch-friendly (>=44px targets), no horizontal overflow.
+--------------------------------------------------------------------------- */
+
+:root {
+  --mt-safe-top: env(safe-area-inset-top, 0px);
+  --mt-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+.mt-app {
+  padding-left: max(0.5rem, env(safe-area-inset-left));
+  padding-right: max(0.5rem, env(safe-area-inset-right));
+}
+
+/* Long translated strings/URLs never push the layout sideways */
+.mt-app p, .mt-app span, .mt-app div, .mt-app h1, .mt-app h2, .mt-app h3 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Remove the 300ms double-tap delay and kill tap highlight flash */
+.mt-icon-btn, .mt-btn, button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Modals: near fullscreen on phones so content is never cramped */
+@media (max-width: 640px) {
+  .mt-modal-backdrop { padding: 0; }
+  .mt-modal {
+    max-height: 94vh;
+    height: auto;
+    border-radius: calc(var(--mt-radius-lg) * 0.7);
+  }
+  .mt-modal-backdrop > .mt-modal {
+    width: 100%;
+    min-height: 70vh;
+    align-self: flex-end;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-bottom: var(--mt-safe-bottom);
+  }
+}
+
+/* Compact phones (Android budget devices ~360px) */
+@media (max-width: 400px) {
+  .mt-app { font-size: 96%; }
+  .mt-btn { padding-left: 0.7rem; padding-right: 0.7rem; }
+  .mt-icon-btn { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+}
+
+/* Header: keep all controls reachable and uncramped on narrow screens */
+@media (max-width: 640px) {
+  .mt-app header.mt-surface-soft {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding-top: max(0.5rem, var(--mt-safe-top));
+  }
+  .mt-app header .mt-icon-btn { padding: 0.45rem; }
+}
+
+/* Bottom navigation breathing room above the Android gesture bar */
+.mt-safe-bottom-pad {
+  padding-bottom: calc(0.5rem + var(--mt-safe-bottom));
+}
+
+/* Inputs and select boxes stay tappable and never overflow */
+.mt-input, select, textarea {
+  max-width: 100%;
+  min-height: 40px;
+}
+
+/* Scrollable modal bodies use momentum scrolling on iOS/Android WebView */
+.mt-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Generic responsive helpers used by v4.1 toolbars/cards */
+.mt-touch-btn {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 641px) {
+  .mt-mobile-only { display: none !important; }
+}
+@media (max-width: 640px) {
+  .mt-desktop-only { display: none !important; }
+}
+
+/* ---------------------------------------------------------------------------
+   v5.1 — ordered top bar + horizontal chat button + overlay guide polish
+--------------------------------------------------------------------------- */
+
+/* Horizontal icon+label top-bar buttons; labels collapse to icons on phones */
+.mt-topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--mt-text);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, transform .12s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.mt-topbar-btn:hover {
+  background: var(--mt-surface);
+  border-color: var(--mt-border);
+}
+.mt-topbar-btn:active { transform: scale(.95); }
+.mt-topbar-btn svg { flex-shrink: 0; }
+@media (max-width: 500px) {
+  .mt-topbar-btn { padding: 0 8px; min-width: 38px; justify-content: center; }
+  .mt-topbar-label { display: none; }
+}
+
+/* Compact horizontal conversation pill — always icon + inline Arabic label,
+   never stacked/vertical, capped width so it cannot collide with neighbours */
+.mt-chat-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 120px;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--mt-border);
+  background: var(--mt-primary-gradient);
+  color: var(--mt-on-primary, #fff);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .22);
+  transition: transform .18s ease, box-shadow .2s ease, filter .2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.mt-chat-button:hover { filter: brightness(1.06); box-shadow: 0 8px 20px rgba(0, 0, 0, .28); }
+.mt-chat-button:active { transform: scale(.95); }
+.mt-chat-button .label {
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+}
+@media (max-width: 400px) {
+  .mt-chat-button { padding: 0 12px; height: 42px; font-size: 12px; }
+  .mt-chat-button .label { font-size: 12px; }
+}
+
+/* Buttons inside the dual-conversation sheet inherit the same horizontal rule */
+.mt-dual-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+}
+
+/* ---------------------------------------------------------------------------
+   v5.1.1 — solid modal backdrop + opaque bottom sheets (no see-through overlap)
+--------------------------------------------------------------------------- */
+
+.mt-backdrop {
+  background: rgba(2, 6, 16, 0.62);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: mt-fade 0.18s ease;
+  z-index: 120;
+}
+
+/* Fully opaque sheet: mix the themed surface over the solid page background,
+   so nothing behind can ever bleed through (fixes translucent overlap). */
+.mt-sheet-solid {
+  background: color-mix(in srgb, var(--mt-surface) 92%, var(--mt-bg));
+  border: 1px solid var(--mt-border);
+  color: var(--mt-text);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Language picker: bottom sheet on phones, centered dialog on larger screens */
+.mt-lang-sheet {
+  max-height: 82vh;
+  height: auto;
+  border-radius: 24px 24px 0 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  animation: mt-sheet-up 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (min-width: 640px) {
+  .mt-lang-sheet {
+    border-radius: var(--mt-radius-lg, 24px);
+    max-height: 80vh;
+    animation: mt-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+@keyframes mt-sheet-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Solid small popovers (options menus etc.) — same opaque guarantee */
+.mt-pop-solid {
+  background: color-mix(in srgb, var(--mt-elevated) 94%, var(--mt-bg));
+  border: 1px solid var(--mt-border);
+  border-radius: var(--mt-radius);
+  box-shadow: var(--mt-shadow);
+}
+
+/* Guarantee opaque dialogs everywhere: themed elevated colour flattened over
+   the solid page background so no underlying content can bleed through. */
+.mt-modal,
+.mt-modal-shell {
+  background: color-mix(in srgb, var(--mt-elevated) 94%, var(--mt-bg));
+}
