@@ -63,6 +63,10 @@ jobs:
           ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Rename APK
+        # FROZEN FILENAME — do NOT rename this asset. The permanent "latest"
+        # download link below resolves to whatever asset carries this exact
+        # name in the newest release; renaming it breaks the permanent link:
+        # https://github.com/m777m44/Translate-Mahdi-2027/releases/latest/download/mahdi-translate-v4.apk
         run: |
           mkdir -p release
           cp android/app/build/outputs/apk/debug/app-debug.apk release/mahdi-translate-v4.apk
@@ -73,5 +77,15 @@ jobs:
         with:
           files: release/mahdi-translate-v4.apk
           name: "Mahdi Translator Pro ${{ github.ref_name }}"
+          # The permanent link is shown on every release; auto-generated notes
+          # are appended below this body.
+          body: |
+            ## 🔗 رابط التحميل الثابت — أحدث إصدار دائماً
+
+            **رابط واحد لا يتغيّر ويُعطي دائماً آخر إصدار من التطبيق بكامل مميزاته وتحديثاته:**
+
+            `https://github.com/m777m44/Translate-Mahdi-2027/releases/latest/download/mahdi-translate-v4.apk`
+
+            ---
           generate_release_notes: true
           fail_on_unmatched_files: true
