@@ -861,41 +861,90 @@ html, body {
 }
 
 /* ---------------------------------------------------------------------------
-   v5.1.1 — solid modal backdrop + opaque bottom sheets (no see-through overlap)
+   v5.1.3 — bulletproof opaque sheets/popovers/modals
+   Critical positioning lives HERE in plain CSS (never in Tailwind CDN
+   utilities, which can fail to compile inside an Android WebView), and every
+   colour has a solid fallback declared BEFORE the colour-mix enhancement so
+   older WebViews without color-mix support still get a fully opaque surface.
 --------------------------------------------------------------------------- */
 
+/* Full-viewport scrim: structure is pure CSS so the sheet can never collapse
+   into a normal-flow strip at the top of the page. */
 .mt-backdrop {
-  background: rgba(2, 6, 16, 0.62);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  animation: mt-fade 0.18s ease;
+  position: fixed;
+  inset: 0;
   z-index: 120;
+  display: flex;
+  align-items: flex-end;      /* bottom-anchored sheet on phones */
+  justify-content: center;
+  background: rgba(2, 6, 16, 0.62);
+  animation: mt-fade 0.18s ease;
+}
+@supports ((backdrop-filter: blur(3px)) or (-webkit-backdrop-filter: blur(3px))) {
+  .mt-backdrop {
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+}
+@media (min-width: 640px) {
+  .mt-backdrop {
+    align-items: center;
+    padding: 1rem;
+  }
 }
 
-/* Fully opaque sheet: mix the themed surface over the solid page background,
-   so nothing behind can ever bleed through (fixes translucent overlap). */
+/* Fully opaque sheet. First line is the guaranteed solid colour; the second
+   line is the theme-aware enhancement for browsers that support color-mix. */
 .mt-sheet-solid {
+  background: var(--mt-card-solid, #0f1522);
   background: color-mix(in srgb, var(--mt-surface) 92%, var(--mt-bg));
-  border: 1px solid var(--mt-border);
-  color: var(--mt-text);
+  border: 1px solid var(--mt-border, rgba(255, 255, 255, 0.12));
+  color: var(--mt-text, #f4f7fb);
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
 }
 
-/* Language picker: bottom sheet on phones, centered dialog on larger screens */
+/* Language picker: FULL-SCREEN opaque page on phones (tap selector -> enter
+   the language list; pick a language -> it closes back to translation),
+   centered dialog on >=640px. All sizing is plain CSS. */
 .mt-lang-sheet {
-  max-height: 82vh;
-  height: auto;
-  border-radius: 24px 24px 0 0;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 0;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
   animation: mt-sheet-up 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mt-lang-sheet .mt-lang-handle {
+  display: none;   /* no drag handle in full-screen mode */
+}
+.mt-lang-sheet .mt-lang-head,
+.mt-lang-sheet .mt-lang-foot {
+  flex-shrink: 0;
+}
+.mt-lang-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.5rem;
 }
 @media (min-width: 640px) {
   .mt-lang-sheet {
+    width: min(448px, 100%);
+    height: auto;
+    max-height: 82vh;
     border-radius: var(--mt-radius-lg, 24px);
-    max-height: 80vh;
+    padding-top: 0;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
     animation: mt-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .mt-lang-sheet .mt-lang-handle {
+    display: flex;
   }
 }
 @keyframes mt-sheet-up {
@@ -905,15 +954,23 @@ html, body {
 
 /* Solid small popovers (options menus etc.) — same opaque guarantee */
 .mt-pop-solid {
+  background: var(--mt-card-solid, #0f1522);
   background: color-mix(in srgb, var(--mt-elevated) 94%, var(--mt-bg));
-  border: 1px solid var(--mt-border);
-  border-radius: var(--mt-radius);
-  box-shadow: var(--mt-shadow);
+  border: 1px solid var(--mt-border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--mt-radius, 16px);
+  box-shadow: var(--mt-shadow, 0 12px 32px rgba(0, 0, 0, 0.45));
 }
 
-/* Guarantee opaque dialogs everywhere: themed elevated colour flattened over
-   the solid page background so no underlying content can bleed through. */
+/* Guarantee opaque dialogs everywhere: solid fallback first, themed
+   color-mix flattening second (dropped silently by old WebViews). */
 .mt-modal,
 .mt-modal-shell {
+  background: var(--mt-card-solid, #0f1522);
   background: color-mix(in srgb, var(--mt-elevated) 94%, var(--mt-bg));
+}
+
+/* Modal scrim also needs a solid fallback for its color-mix background. */
+.mt-modal-backdrop {
+  background: rgba(2, 6, 16, 0.66);
+  background: color-mix(in srgb, var(--mt-bg) 72%, transparent);
 }

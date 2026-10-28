@@ -120,6 +120,11 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
   };
 
   const pick = (code: string) => {
+    // Dismiss the on-screen keyboard, apply the choice, then close the panel
+    // so the translation card is immediately visible again.
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     onChange(code);
     close();
   };
@@ -170,10 +175,11 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
         </button>
       )}
 
-      {/* Solid bottom-sheet language picker (opaque — never shows content through) */}
+      {/* Full-screen opaque language page (pure-CSS structure so it can never
+          collapse into a translucent strip if the Tailwind CDN lags). */}
       {isOpen && (
         <div
-          className="mt-backdrop fixed inset-0 z-[120] flex items-end sm:items-center sm:justify-center"
+          className="mt-backdrop"
           dir="rtl"
           role="dialog"
           aria-modal="true"
@@ -181,16 +187,16 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
           onClick={close}
         >
           <div
-            className="mt-sheet-solid mt-lang-sheet w-full sm:max-w-md flex flex-col overflow-hidden"
+            className="mt-sheet-solid mt-lang-sheet"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drag handle (phones) */}
-            <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
+            {/* Drag handle (tablets/desktop dialog only) */}
+            <div className="mt-lang-handle sm:hidden flex justify-center pt-2.5 pb-1">
               <span className="w-10 h-1 rounded-full opacity-40" style={{ background: 'var(--mt-subtext)' }} />
             </div>
 
             {/* Header */}
-            <div className="px-4 pt-2.5 pb-3 border-b shrink-0" style={{ borderColor: 'var(--mt-border)' }}>
+            <div className="mt-lang-head px-4 pt-3 pb-3 border-b" style={{ borderColor: 'var(--mt-border)' }}>
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-extrabold mt-heading flex items-center gap-2">
                   <span>اختيار اللغة {label === 'من' ? 'المصدر' : 'الهدف'}</span>
@@ -236,7 +242,7 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
             </div>
 
             {/* Language list */}
-            <div className="overflow-y-auto mt-scroll p-2 space-y-0.5 min-h-[220px]">
+            <div className="mt-lang-list mt-scroll space-y-0.5">
               {allowAutoDetect && !searchQuery.trim() && (
                 <button
                   type="button"
@@ -329,7 +335,7 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
 
             {/* Footer */}
             <div
-              className="px-4 py-2.5 border-t shrink-0 text-[10px] mt-subtext flex items-center justify-between"
+              className="mt-lang-foot px-4 py-2.5 border-t text-[10px] mt-subtext flex items-center justify-between"
               style={{ borderColor: 'var(--mt-border)' }}
             >
               <div className="flex items-center gap-1.5">

@@ -1,6 +1,6 @@
 {
   "name": "Translate Mahdi 2027 v5.1 — instant Google-style translator",
-  "version": "5.1.1",
+  "version": "5.1.3",
   "description": "Focused instant translator inspired by Google Translate: instant text translation while typing, native Android speech recognition with Web Speech fallback, camera and image OCR translation with an on-device Tesseract fallback, a native SYSTEM_ALERT_WINDOW floating translation window that stays above every app (draggable bubble + WebView panel) plus an in-page floating window on web/PWA, robust local TTS, offline dictionary mode, saved history and favourites, 1544 themes, PWA install, and hardware back-button handling with double-press to exit. No account, no cloud sync, no in-app APK button.",
   "requestFramePermissions": [
     "camera",
