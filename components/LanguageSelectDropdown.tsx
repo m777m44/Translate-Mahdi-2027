@@ -1,14 +1,16 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   Check,
+  CheckCircle2,
   Download,
   Search,
   ChevronDown,
   Sparkles,
-  WifiOff,
   Loader2,
   HardDrive,
   X,
+  ArrowRight,
+  MoreVertical,
 } from 'lucide-react';
 import { LANGUAGES } from '../constants.ts';
 import { Language } from '../types.ts';
@@ -28,6 +30,33 @@ interface LanguageSelectDropdownProps {
   onAcceptAutoDetect?: () => void;
 }
 
+const RECENT_LIMIT = 5;
+
+const recentStorageKey = (label: string) =>
+  label === 'من' ? 'mahdi_recent_langs_source' : 'mahdi_recent_langs_target';
+
+function readRecents(label: string): string[] {
+  try {
+    const raw = localStorage.getItem(recentStorageKey(label));
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    const valid = new Set(['auto', ...LANGUAGES.map((l) => l.code)]);
+    return parsed.filter((c): c is string => typeof c === 'string' && valid.has(c));
+  } catch {
+    return [];
+  }
+}
+
+function pushRecent(label: string, code: string): string[] {
+  const next = [code, ...readRecents(label).filter((c) => c !== code)].slice(0, RECENT_LIMIT);
+  try {
+    localStorage.setItem(recentStorageKey(label), JSON.stringify(next));
+  } catch {
+    /* storage unavailable — recents simply won't persist */
+  }
+  return next;
+}
+
 export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
   label,
   value,
@@ -41,20 +70,36 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
   onAcceptAutoDetect,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchMode, setSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [recents, setRecents] = useState<string[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const close = () => setIsOpen(false);
+  const close = useCallback(() => setIsOpen(false), []);
+  const exitSearch = useCallback(() => {
+    setSearchMode(false);
+    setSearchQuery('');
+  }, []);
 
-  // Hardware / browser back closes the sheet first (one step, never the app).
+  // Load the recent-languages list every time the sheet opens.
+  useEffect(() => {
+    if (isOpen) setRecents(readRecents(label));
+  }, [isOpen, label]);
+
+  // Hardware / browser back: exit search first, then close the sheet.
   useEffect(() => {
     if (!isOpen) return;
     const unregister = pushBackHandler(() => {
-      close();
+      if (searchMode) {
+        exitSearch();
+      } else {
+        close();
+      }
       return true;
     });
     return unregister;
-  }, [isOpen]);
+  }, [isOpen, searchMode, close, exitSearch]);
 
   // Lock background scrolling while the sheet is open.
   useEffect(() => {
@@ -66,24 +111,31 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
     };
   }, [isOpen]);
 
-  // Focus the search field and reset the query on every open.
+  // Focus the search input when entering search mode; reset state on close.
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && searchMode) {
       const t = window.setTimeout(() => searchInputRef.current?.focus(), 120);
       return () => window.clearTimeout(t);
     }
-    setSearchQuery('');
-  }, [isOpen]);
+    if (!isOpen) {
+      setSearchMode(false);
+      setSearchQuery('');
+      setMenuOpen(false);
+    }
+  }, [isOpen, searchMode]);
 
-  // Escape closes the sheet.
+  // Escape closes the sheet (or exits search first).
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
+      if (e.key === 'Escape') {
+        if (searchMode) exitSearch();
+        else close();
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen]);
+  }, [isOpen, searchMode, close, exitSearch]);
 
   const selectedLang = LANGUAGES.find((l) => l.code === value);
 
@@ -96,23 +148,32 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
 
   const isCurrentDownloaded = value !== 'auto' && isLanguageDownloaded(value);
 
-  const sortedLanguages = useMemo(() => {
-    const arabic = LANGUAGES.find((l) => l.code === 'ar');
-    const english = LANGUAGES.find((l) => l.code === 'en');
-    const others = LANGUAGES.filter((l) => l.code !== 'ar' && l.code !== 'en');
-    return [...(arabic ? [arabic] : []), ...(english ? [english] : []), ...others];
-  }, []);
+  // All languages, alphabetically ordered by English name (matches the
+  // Google Translate "All languages" A–Z list).
+  const allLanguages = useMemo(
+    () => [...LANGUAGES].sort((a, b) => a.name.localeCompare(b.name)),
+    [],
+  );
 
   const filteredLanguages = useMemo(() => {
-    if (!searchQuery.trim()) return sortedLanguages;
+    if (!searchQuery.trim()) return allLanguages;
     const q = searchQuery.toLowerCase().trim();
-    return sortedLanguages.filter(
+    return allLanguages.filter(
       (l) =>
         l.name.toLowerCase().includes(q) ||
         l.nativeName.toLowerCase().includes(q) ||
         l.code.toLowerCase().includes(q),
     );
-  }, [searchQuery, sortedLanguages]);
+  }, [searchQuery, allLanguages]);
+
+  // Recent entries that still resolve (auto + real languages).
+  const recentLanguages = useMemo(
+    () =>
+      recents
+        .map((code) => (code === 'auto' ? { code, name: 'Detect Language', nativeName: 'كشف تلقائي عن اللغة' } : LANGUAGES.find((l) => l.code === code)))
+        .filter((l): l is Language | { code: string; name: string; nativeName: string } => Boolean(l)),
+    [recents],
+  );
 
   const getPackStatus = (langCode: string) => {
     const pack = offlinePacks.find((p: any) => p.langCode === langCode);
@@ -120,13 +181,80 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
   };
 
   const pick = (code: string) => {
-    // Dismiss the on-screen keyboard, apply the choice, then close the panel
-    // so the translation card is immediately visible again.
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
+    setRecents(pushRecent(label, code));
     onChange(code);
     close();
+  };
+
+  const isSearching = searchMode && searchQuery.trim().length > 0;
+
+  const renderTrailing = (langCode: string) => {
+    if (langCode === 'auto') return null;
+    const status = getPackStatus(langCode);
+    if (status === 'downloaded' || isLanguageDownloaded(langCode)) {
+      return (
+        <CheckCircle2
+          className="mt-lang-row-icon mt-success-text shrink-0"
+          size={22}
+          aria-label="حزمة اللغة محملة"
+        />
+      );
+    }
+    if (status === 'downloading') {
+      return <Loader2 className="mt-lang-row-icon mt-accent-text shrink-0 animate-spin" size={22} />;
+    }
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDownloadLanguage(langCode);
+        }}
+        className="mt-lang-download"
+        title="تنزيل حزمة اللغة للعمل بدون إنترنت"
+        aria-label={`تنزيل حزمة ${langCode}`}
+      >
+        <Download size={22} />
+      </button>
+    );
+  };
+
+  const renderRow = (
+    langCode: string,
+    rowLabel: string,
+    options: { detect?: boolean } = {},
+  ) => {
+    const isSelected = value === langCode;
+    // div[role=button], not a <button>: the trailing download control is itself
+    // a real button, and nested buttons are invalid HTML.
+    return (
+      <div
+        key={langCode}
+        role="button"
+        tabIndex={0}
+        onClick={() => pick(langCode)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            pick(langCode);
+          }
+        }}
+        className={`mt-lang-row${isSelected ? ' mt-lang-row--selected' : ''}`}
+        aria-current={isSelected ? 'true' : undefined}
+      >
+        <span className="mt-lang-row-check">
+          {isSelected && <Check size={24} strokeWidth={3} />}
+        </span>
+        <span className="mt-lang-row-label">
+          {options.detect && <Sparkles className="mt-lang-row-sparkle" size={20} />}
+          <span className="truncate">{rowLabel}</span>
+        </span>
+        {!isSelected && renderTrailing(langCode)}
+      </div>
+    );
   };
 
   return (
@@ -134,12 +262,8 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
       {/* Compact trigger button */}
       <button
         type="button"
-        onClick={() => setIsOpen((p) => !p)}
-        className={`h-9 w-full max-w-[170px] px-3 rounded-full border text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 select-none ${
-          isOpen
-            ? 'mt-hairline bg-amber-500/15 mt-accent-text ring-2 ring-[var(--mt-accent)]/25'
-            : 'mt-hairline mt-surface-soft hover:border-[var(--mt-border-strong)] hover:bg-[var(--mt-surface)]'
-        }`}
+        onClick={() => setIsOpen(true)}
+        className="h-9 w-full max-w-[170px] px-3 rounded-full border text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 select-none mt-hairline mt-surface-soft hover:border-[var(--mt-border-strong)] hover:bg-[var(--mt-surface)]"
         title={`اختيار لغة ${label}`}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
@@ -156,9 +280,7 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
             title="حزمة اللغة محملة وتعمل بدون إنترنت"
           />
         )}
-        <ChevronDown
-          className={`w-3.5 h-3.5 opacity-60 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 mt-accent-text' : ''}`}
-        />
+        <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
       </button>
 
       {/* Auto-detection accept pill */}
@@ -175,8 +297,9 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
         </button>
       )}
 
-      {/* Full-screen opaque language page (pure-CSS structure so it can never
-          collapse into a translucent strip if the Tailwind CDN lags). */}
+      {/* Full-screen opaque Google-Translate-style language page.
+          Structural positioning lives in plain CSS (.mt-backdrop etc.) so the
+          sheet can never collapse if the Tailwind runtime CDN lags. */}
       {isOpen && (
         <div
           className="mt-backdrop"
@@ -190,158 +313,145 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
             className="mt-sheet-solid mt-lang-sheet"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Drag handle (tablets/desktop dialog only) */}
-            <div className="mt-lang-handle sm:hidden flex justify-center pt-2.5 pb-1">
-              <span className="w-10 h-1 rounded-full opacity-40" style={{ background: 'var(--mt-subtext)' }} />
-            </div>
-
-            {/* Header */}
-            <div className="mt-lang-head px-4 pt-3 pb-3 border-b" style={{ borderColor: 'var(--mt-border)' }}>
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-extrabold mt-heading flex items-center gap-2">
-                  <span>اختيار اللغة {label === 'من' ? 'المصدر' : 'الهدف'}</span>
-                </h3>
-                <div className="flex items-center gap-1">
-                  {onOpenOfflinePacks && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        close();
-                        onOpenOfflinePacks();
-                      }}
-                      className="text-[10.5px] mt-accent-text font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 hover:bg-[var(--mt-surface)] transition-colors"
-                    >
-                      <HardDrive className="w-3.5 h-3.5" />
-                      <span>إدارة الحزم</span>
-                    </button>
-                  )}
+            {/* ── Top bar ─────────────────────────────────────────── */}
+            <div className="mt-lang-topbar">
+              {searchMode ? (
+                <>
                   <button
                     type="button"
-                    onClick={close}
-                    className="mt-icon-btn p-2"
-                    aria-label="إغلاق"
+                    className="mt-lang-iconbtn"
+                    onClick={exitSearch}
+                    aria-label="رجوع"
                   >
-                    <X size={18} />
+                    <ArrowRight size={23} />
                   </button>
-                </div>
-              </div>
-
-              {/* Search */}
-              <div className="relative mt-2.5">
-                <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 mt-subtext pointer-events-none" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="ابحث عن لغة..."
-                  className="w-full pr-10 pl-3 py-2.5 text-xs font-semibold rounded-xl bg-[var(--mt-surface)] border outline-none focus:border-[var(--mt-accent)] transition-colors"
-                  style={{ borderColor: 'var(--mt-border)' }}
-                />
-              </div>
-            </div>
-
-            {/* Language list */}
-            <div className="mt-lang-list mt-scroll space-y-0.5">
-              {allowAutoDetect && !searchQuery.trim() && (
-                <button
-                  type="button"
-                  onClick={() => pick('auto')}
-                  className={`w-full text-right p-3 rounded-2xl text-xs flex items-center justify-between transition-colors ${
-                    value === 'auto'
-                      ? 'mt-accent-soft mt-accent-text font-extrabold border'
-                      : 'hover:bg-[var(--mt-surface)]'
-                  }`}
-                  style={value === 'auto' ? { borderColor: 'var(--mt-border)' } : undefined}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Sparkles className="w-4 h-4 mt-accent-text shrink-0" />
-                    <span className="font-bold text-xs">كشف تلقائي عن اللغة</span>
-                  </div>
-                  {value === 'auto' && <Check className="w-4 h-4 mt-accent-text shrink-0" />}
-                </button>
-              )}
-
-              {filteredLanguages.length === 0 ? (
-                <div className="py-10 text-center text-xs mt-subtext">لا توجد لغة مطابقة للبحث</div>
-              ) : (
-                filteredLanguages.map((lang: Language) => {
-                  const isSelected = value === lang.code;
-                  const downloaded = isLanguageDownloaded(lang.code);
-                  const packStatus = getPackStatus(lang.code);
-                  const isDownloading = packStatus === 'downloading';
-
-                  return (
-                    <div
-                      key={lang.code}
-                      onClick={() => pick(lang.code)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') pick(lang.code);
-                      }}
-                      className={`w-full text-right p-2.5 rounded-2xl text-xs flex items-center justify-between gap-2 cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'bg-amber-500/15 mt-accent-text font-extrabold border'
-                          : 'hover:bg-[var(--mt-surface)]'
-                      }`}
-                      style={isSelected ? { borderColor: 'var(--mt-border)' } : undefined}
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="ابحث عن لغة"
+                    className="mt-lang-search"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      className="mt-lang-iconbtn"
+                      onClick={() => setSearchQuery('')}
+                      aria-label="مسح البحث"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-lg shrink-0">{lang.flag}</span>
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-bold text-xs truncate">
-                            {lang.code === 'ar' ? 'العربية' : lang.nativeName}
-                          </span>
-                          {lang.code !== 'ar' && (
-                            <span className="text-[10px] mt-subtext truncate">{lang.name}</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                        {downloaded ? (
-                          <span
-                            className="px-2 py-1 rounded-lg text-[10px] font-bold mt-accent-soft mt-success-text border border-emerald-500/30 flex items-center gap-1"
-                            title="هذه اللغة محملة وتعمل بدون إنترنت"
-                          >
-                            <Check className="w-3 h-3 mt-accent-text" />
-                            <span className="hidden xs:inline">محملة</span>
-                          </span>
-                        ) : isDownloading ? (
-                          <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-sky-500/20 mt-accent-text border border-sky-500/30 flex items-center gap-1 animate-pulse">
-                            <Loader2 className="w-3 h-3 animate-spin mt-accent-text" />
-                            <span className="hidden xs:inline">جاري التنزيل</span>
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => onDownloadLanguage(lang.code)}
-                            className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-[var(--mt-surface)] hover:bg-amber-500/20 mt-subtext hover:text-[var(--mt-accent)] border transition-all active:scale-95 flex items-center gap-1"
-                            style={{ borderColor: 'var(--mt-border)' }}
-                            title="تنزيل حزمة اللغة للعمل عند انقطاع الإنترنت"
-                          >
-                            <Download className="w-3 h-3" />
-                            <span>أوفلاين</span>
-                          </button>
+                      <X size={22} />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="mt-lang-iconbtn"
+                    onClick={close}
+                    aria-label="رجوع"
+                  >
+                    <ArrowRight size={23} />
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      className="mt-lang-iconbtn"
+                      onClick={() => setSearchMode(true)}
+                      aria-label="بحث"
+                    >
+                      <Search size={22} />
+                    </button>
+                    {onOpenOfflinePacks && (
+                      <div className="relative">
+                        <button
+                          type="button"
+                          className="mt-lang-iconbtn"
+                          onClick={() => setMenuOpen((p) => !p)}
+                          aria-label="خيارات إضافية"
+                          aria-haspopup="menu"
+                          aria-expanded={menuOpen}
+                        >
+                          <MoreVertical size={22} />
+                        </button>
+                        {menuOpen && (
+                          <>
+                            <div className="mt-lang-menu-scrim" onClick={() => setMenuOpen(false)} />
+                            <div className="mt-pop-solid mt-lang-menu" role="menu">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setMenuOpen(false);
+                                  close();
+                                  onOpenOfflinePacks();
+                                }}
+                                className="mt-lang-menu-item"
+                              >
+                                <HardDrive size={18} />
+                                <span>إدارة الحزم الأوفلاين</span>
+                              </button>
+                            </div>
+                          </>
                         )}
-                        {isSelected && <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />}
                       </div>
-                    </div>
-                  );
-                })
+                    )}
+                  </div>
+                </>
               )}
             </div>
 
-            {/* Footer */}
-            <div
-              className="mt-lang-foot px-4 py-2.5 border-t text-[10px] mt-subtext flex items-center justify-between"
-              style={{ borderColor: 'var(--mt-border)' }}
-            >
-              <div className="flex items-center gap-1.5">
-                <WifiOff className="w-3.5 h-3.5 mt-accent-text shrink-0" />
-                <span>الحزم المحملة تعمل فوراً بدون إنترنت</span>
-              </div>
+            {/* ── Title (hidden while searching) ──────────────────── */}
+            {!searchMode && (
+              <h2 className="mt-lang-title">
+                {label === 'من' ? 'الترجمة من' : 'الترجمة إلى'}
+              </h2>
+            )}
+
+            {/* ── Language list ───────────────────────────────────── */}
+            <div className="mt-lang-list mt-scroll">
+              {isSearching ? (
+                filteredLanguages.length === 0 ? (
+                  <div className="mt-lang-empty">لا توجد لغة مطابقة للبحث</div>
+                ) : (
+                  filteredLanguages.map((lang: Language) =>
+                    renderRow(lang.code, lang.code === 'ar' ? 'العربية' : lang.nativeName),
+                  )
+                )
+              ) : (
+                <>
+                  {/* Detect language (source picker only) */}
+                  {allowAutoDetect &&
+                    renderRow('auto', 'كشف تلقائي عن اللغة', { detect: true })}
+
+                  {/* Recent languages */}
+                  {recentLanguages.length > 0 && (
+                    <div className="mt-lang-section">
+                      <div className="mt-lang-section-label">اللغات الأخيرة</div>
+                      {recentLanguages.map((lang) =>
+                        renderRow(
+                          lang.code,
+                          lang.code === 'auto'
+                            ? 'كشف تلقائي عن اللغة'
+                            : lang.code === 'ar'
+                              ? 'العربية'
+                              : (lang as Language).nativeName,
+                          { detect: lang.code === 'auto' },
+                        ),
+                      )}
+                    </div>
+                  )}
+
+                  {/* All languages A–Z */}
+                  <div className="mt-lang-section">
+                    <div className="mt-lang-section-label">كل اللغات</div>
+                    {allLanguages.map((lang: Language) =>
+                      renderRow(lang.code, lang.code === 'ar' ? 'العربية' : lang.nativeName),
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
