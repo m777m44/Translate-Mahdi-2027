@@ -875,8 +875,9 @@ html, body {
   inset: 0;
   z-index: 120;
   display: flex;
-  align-items: flex-end;      /* bottom-anchored sheet on phones */
+  align-items: stretch;       /* the language page fills the whole viewport */
   justify-content: center;
+  padding: 0;
   background: rgba(2, 6, 16, 0.62);
   animation: mt-fade 0.18s ease;
 }
@@ -886,13 +887,6 @@ html, body {
     -webkit-backdrop-filter: blur(3px);
   }
 }
-@media (min-width: 640px) {
-  .mt-backdrop {
-    align-items: center;
-    padding: 1rem;
-  }
-}
-
 /* Fully opaque sheet. First line is the guaranteed solid colour; the second
    line is the theme-aware enhancement for browsers that support color-mix. */
 .mt-sheet-solid {
@@ -903,21 +897,26 @@ html, body {
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
 }
 
-/* Language picker: FULL-SCREEN opaque page on phones (tap selector -> enter
-   the language list; pick a language -> it closes back to translation),
-   centered dialog on >=640px. All sizing is plain CSS. */
+/* Language picker: tapping a selector ALWAYS enters the full language screen on every
+   device size (phone, tablet, desktop). The page covers the whole viewport. */
 .mt-lang-sheet {
   width: 100%;
+  max-width: 100%;
   height: 100%;
   height: 100dvh;
-  max-height: 100%;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border: 0;
   border-radius: 0;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
-  animation: mt-sheet-up 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: mt-lang-page-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes mt-lang-page-in {
+  from { transform: translateY(24px); opacity: 0.4; }
+  to { transform: translateY(0); opacity: 1; }
 }
 .mt-lang-sheet .mt-lang-handle {
   display: none;   /* no drag handle in full-screen mode */
@@ -933,18 +932,18 @@ html, body {
   -webkit-overflow-scrolling: touch;
   padding: 0.5rem;
 }
+/* Wide screens keep the full-screen page but centre the content column so rows
+   stay readable instead of stretching edge to edge. */
 @media (min-width: 640px) {
-  .mt-lang-sheet {
-    width: min(448px, 100%);
-    height: auto;
-    max-height: 82vh;
-    border-radius: var(--mt-radius-lg, 24px);
-    padding-top: 0;
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-    animation: mt-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  .mt-lang-sheet .mt-lang-topbar,
+  .mt-lang-sheet .mt-lang-title,
+  .mt-lang-sheet .mt-lang-list {
+    width: 100%;
+    max-width: 680px;
+    margin-inline: auto;
   }
-  .mt-lang-sheet .mt-lang-handle {
-    display: flex;
+  .mt-lang-sheet .mt-lang-topbar {
+    border-bottom: 1px solid var(--mt-border, rgba(255, 255, 255, 0.1));
   }
 }
 @keyframes mt-sheet-up {
