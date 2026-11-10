@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   X, Wifi, WifiOff, Zap, Power, Volume2, Type, Palette, HardDrive,
-  Trash2, Info, ChevronLeft,
+  Trash2, Info, ChevronLeft, DownloadCloud,
 } from 'lucide-react';
 import { ThemeConfig, TtsSettings } from '../types.ts';
 
@@ -23,6 +23,9 @@ interface SettingsModalProps {
   onOpenPacks: () => void;
   historyCount: number;
   onClearHistory: () => void;
+  onCheckUpdate: () => void;
+  checkingUpdate?: boolean;
+  appVersion?: string;
 }
 
 const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ value, onChange }) => (
@@ -56,6 +59,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   instantTranslate, onToggleInstant, keepScreenOn, onToggleKeepScreenOn,
   ttsSettings, onChangeTtsSettings, availableVoices,
   onOpenThemes, onOpenZoom, onOpenPacks, historyCount, onClearHistory,
+  onCheckUpdate, checkingUpdate = false, appVersion = '—',
 }) => {
   if (!isOpen) return null;
 
@@ -92,6 +96,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <Row icon={<HardDrive size={17} />} title="حزم اللغات الأوفلاين">
             <button className={navBtn} onClick={onOpenPacks}>إدارة الحزم <ChevronLeft size={14} /></button>
+          </Row>
+
+          <Row icon={<DownloadCloud size={17} />} title={`تحديث التطبيق (${appVersion})`}>
+            <button className={navBtn} onClick={onCheckUpdate} disabled={checkingUpdate}>
+              {checkingUpdate ? 'جاري الفحص…' : 'فحص التحديث'} <ChevronLeft size={14} />
+            </button>
           </Row>
 
           <div className="py-3 border-b" style={{ borderColor: 'var(--mt-border)' }}>
@@ -141,7 +151,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="p-2 rounded-xl mt-accent-soft shrink-0"><Info size={17} /></div>
             <div className="text-[10px] mt-subtext leading-relaxed">
               <div className="font-extrabold mt-heading mb-0.5">مهدي للترجمة — Mahdi Translate</div>
-              <div>الإصدار 5.3.0 · MAHDI © 2027 · ترجمة فورية أونلاين وأوفلاين</div>
+              <div>الإصدار 5.4.0 · MAHDI © 2027 · ترجمة فورية أونلاين وأوفلاين</div>
             </div>
           </div>
         </div>

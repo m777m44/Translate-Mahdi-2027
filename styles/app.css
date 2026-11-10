@@ -1494,3 +1494,384 @@ html, body {
     border-inline: 1px solid var(--mt-border, rgba(255, 255, 255, 0.08));
   }
 }
+
+/* ---------------------------------------------------------------------------
+   v5.4.0 — structural shell that does NOT depend on any utility framework.
+   Every critical row (header, language bar, action dock) is expressed with
+   plain .mt-shell-* rules so a missing/blocked stylesheet can never collapse
+   the app into the overlapping mess seen in v5.3.0 reports.
+--------------------------------------------------------------------------- */
+
+/* Nothing may ever push the page sideways. */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+.mt-shell-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.mt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  flex-wrap: nowrap;
+}
+
+.mt-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;         /* lets the title truncate instead of overflowing */
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.mt-header-logo {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  max-height: 36px;
+  object-fit: cover;
+  border-radius: 12px;
+  flex: 0 0 auto;
+}
+
+.mt-header-text { min-width: 0; overflow: hidden; }
+
+.mt-header-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--mt-heading, var(--mt-text));
+}
+
+.mt-header-sub {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--mt-subtext);
+}
+
+.mt-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+/* ── Language bar: two equal halves + a fixed swap button, never overlapping ── */
+.mt-langbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 999px;
+}
+
+.mt-langbar-side {
+  flex: 1 1 0;          /* equal halves regardless of label length */
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mt-langbar-swap {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The trigger pill inside each half must never exceed its half. */
+.mt-langbar-side > * { max-width: 100%; min-width: 0; }
+
+/* ── Bottom action dock: one row, equal cells, labels under the icons ───── */
+.mt-dock {
+  width: 100%;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.mt-dock-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+  justify-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.mt-dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.mt-dock-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;      /* never break into two stacked letters */
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  color: var(--mt-subtext);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mt-dock-action {
+  width: 100%;
+  max-width: 132px;
+  height: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* Compact phones: keep four cells but shrink the gap, never the touch target. */
+@media (max-width: 380px) {
+  .mt-dock-row { gap: 3px; }
+  .mt-dock-label { font-size: 9.5px; }
+  .mt-header-title { font-size: 13.5px; }
+}
+
+/* Landscape / short screens: the dock must not eat the content. */
+@media (max-height: 520px) {
+  .mt-dock { padding-top: 6px; }
+  .mt-dock-action { height: 44px; min-height: 44px; }
+}
+
+/* ---------------------------------------------------------------------------
+   v5.4.0 — In-app update dialog (Material 3 flavour, theme-token driven)
+--------------------------------------------------------------------------- */
+
+.mt-update-card {
+  width: min(440px, calc(100vw - 32px));
+  max-height: min(86vh, 720px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 18px calc(16px + env(safe-area-inset-bottom));
+  border-radius: 28px;
+  overflow: hidden;
+  animation: mt-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mt-update-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mt-update-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mt-accent, #22d3ee);
+  background: rgba(34, 211, 238, 0.14);
+  background: color-mix(in srgb, var(--mt-accent) 16%, transparent);
+}
+
+.mt-update-headtext { flex: 1 1 auto; min-width: 0; }
+
+.mt-update-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--mt-text, #f4f7fb);
+}
+
+.mt-update-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mt-subtext, #a3b0c2);
+}
+
+.mt-update-versions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--mt-surface, rgba(255, 255, 255, 0.05));
+}
+
+.mt-update-ver {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mt-subtext, #a3b0c2);
+}
+.mt-update-ver--new { color: var(--mt-accent, #22d3ee); }
+.mt-update-arrow { color: var(--mt-subtext, #a3b0c2); transform: rotate(180deg); }
+
+.mt-update-notes {
+  flex: 1 1 auto;
+  min-height: 60px;
+  max-height: 30vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--mt-border, rgba(255, 255, 255, 0.1));
+  background: var(--mt-card-solid, #0f1522);
+  background: color-mix(in srgb, var(--mt-surface) 70%, transparent);
+}
+
+.mt-update-note {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--mt-text, #f4f7fb);
+  opacity: 0.9;
+}
+.mt-update-note:last-child { margin-bottom: 0; }
+
+.mt-update-progress { display: flex; flex-direction: column; gap: 6px; }
+
+.mt-update-progress-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mt-accent, #22d3ee);
+}
+
+.mt-update-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--mt-surface, rgba(255, 255, 255, 0.1));
+}
+
+.mt-update-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--mt-accent, #22d3ee);
+  background: var(--mt-primary-gradient, var(--mt-accent, #22d3ee));
+  transition: width 0.2s ease;
+}
+
+.mt-update-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+.mt-update-status--ok {
+  color: var(--mt-success, #4ade80);
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.28);
+}
+.mt-update-status--warn {
+  color: var(--mt-warning, #fbbf24);
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+.mt-update-status--error {
+  color: #ffb4b4;
+  background: rgba(255, 107, 107, 0.14);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+.mt-update-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.mt-update-btn {
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.mt-update-btn:active { transform: scale(0.97); }
+.mt-update-btn:disabled { opacity: 0.6; cursor: default; }
+
+.mt-update-btn--ghost {
+  color: var(--mt-text, #f4f7fb);
+  border-color: var(--mt-border, rgba(255, 255, 255, 0.16));
+  background: transparent;
+}
+
+.mt-update-btn--primary {
+  color: var(--mt-on-primary, #04141b);
+  background: var(--mt-accent, #22d3ee);
+  background: var(--mt-primary-gradient, var(--mt-accent, #22d3ee));
+  box-shadow: 0 6px 18px rgba(34, 211, 238, 0.28);
+}
+
+.mt-update-foot {
+  margin: 0;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--mt-subtext, #a3b0c2);
+}
+
+@media (max-width: 380px) {
+  .mt-update-actions { flex-direction: column-reverse; }
+  .mt-update-btn { width: 100%; }
+}

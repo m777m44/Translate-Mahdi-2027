@@ -56,6 +56,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- التحديث الذاتي: تنزيل الـAPK ثم فتح شاشة التثبيت -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- WalkieTalkie / Whisper / WebRTC voice conversation -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />

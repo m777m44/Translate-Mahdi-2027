@@ -1,0 +1,4 @@
+/* Compiled at build time — no CDN, works offline inside the APK. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

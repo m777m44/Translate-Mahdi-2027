@@ -1,0 +1,27 @@
+/* Self-hosted fonts (npm @fontsource, OFL).
+   The app previously pulled them from fonts.googleapis.com: offline that meant
+   a fallback font with different metrics, which clipped buttons and labels.
+   Only the weights the theme engine actually uses are bundled. */
+@import '@fontsource/cairo/400.css';
+@import '@fontsource/cairo/600.css';
+@import '@fontsource/cairo/700.css';
+@import '@fontsource/cairo/800.css';
+@import '@fontsource/cairo/900.css';
+@import '@fontsource/tajawal/400.css';
+@import '@fontsource/tajawal/500.css';
+@import '@fontsource/tajawal/700.css';
+@import '@fontsource/tajawal/800.css';
+@import '@fontsource/reem-kufi/400.css';
+@import '@fontsource/reem-kufi/600.css';
+@import '@fontsource/reem-kufi/700.css';
+@import '@fontsource/amiri/400.css';
+@import '@fontsource/amiri/700.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/inter/800.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/700.css';
+@import '@fontsource/orbitron/400.css';
+@import '@fontsource/orbitron/600.css';
+@import '@fontsource/orbitron/800.css';

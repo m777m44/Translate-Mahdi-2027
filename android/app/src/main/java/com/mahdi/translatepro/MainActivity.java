@@ -14,6 +14,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         List<Class<? extends Plugin>> plugins = new ArrayList<>();
         plugins.add(FloatingWindowPlugin.class);
+        plugins.add(UpdatePlugin.class);
         registerPlugins(plugins);
         super.onCreate(savedInstanceState);
     }
