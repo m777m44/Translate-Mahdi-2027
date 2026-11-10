@@ -24,6 +24,7 @@ import {
 import { SettingsModal } from './components/SettingsModal.tsx';
 import { OfflinePacksModal } from './components/OfflinePacksModal.tsx';
 import { DualConversationModal } from './components/DualConversationModal.tsx';
+import { WalkieTalkieModal } from './components/WalkieTalkieModal.tsx';
 import { FloatingTranslateWindow } from './components/FloatingTranslateWindow.tsx';
 import { ImageTranslateModal } from './components/ImageTranslateModal.tsx';
 import { ZoomModal } from './components/ZoomModal.tsx';
@@ -50,7 +51,7 @@ import {
 import {
   History, Volume2, Copy, Camera, Mic, MicOff, ArrowRightLeft,
   Trash2, X, Wifi, WifiOff, Sparkles, Star, CornerDownLeft,
-  Palette, Settings as SettingsIcon, SquareStack, Share2, MessageSquareText,
+  Palette, Settings as SettingsIcon, SquareStack, Share2, MessageSquareText, Zap,
 } from 'lucide-react';
 
 const AVAILABLE_VOICES = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Zephyr'];
@@ -108,6 +109,7 @@ export const App: React.FC = () => {
   const [isOverlayGuideOpen, setIsOverlayGuideOpen] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [isDualOpen, setIsDualOpen] = useState(false);
+  const [isWalkieOpen, setIsWalkieOpen] = useState(false);
 
   // ── Voice input ─────────────────────────────────────────────────────────
   const [isListening, setIsListening] = useState(false);
@@ -213,6 +215,7 @@ export const App: React.FC = () => {
   modalCloserRef.current = () => {
     const closers: Array<[boolean, () => void]> = [
       [isDualOpen, () => setIsDualOpen(false)],
+      [isWalkieOpen, () => setIsWalkieOpen(false)],
       [isImageModalOpen, () => setIsImageModalOpen(false)],
       [isFloatingOpen, () => setIsFloatingOpen(false)],
       [isThemeGalleryOpen, () => setIsThemeGalleryOpen(false)],
@@ -892,6 +895,17 @@ export const App: React.FC = () => {
                 </span>
               </div>
 
+              {/* Walkie-talkie: hands-free instant conversation (RTranslator mode) */}
+              <div className="flex flex-col items-center gap-1.5">
+                <button onClick={() => setIsWalkieOpen(true)}
+                  className="mt-chat-button mt-chat-button--live"
+                  title="الوضع الفوري — محادثة بدون لمس الشاشة"
+                  aria-label="الوضع الفوري">
+                  <Zap size={18} />
+                  <span className="label">فوري</span>
+                </button>
+              </div>
+
               {/* Conversation: compact horizontal pill, never vertical/cramped */}
               <div className="flex flex-col items-center gap-1.5">
                 <button onClick={() => setIsDualOpen(true)}
@@ -931,6 +945,16 @@ export const App: React.FC = () => {
       />
 
       <OfflinePacksModal isOpen={isPacksOpen} onClose={() => setIsPacksOpen(false)} theme={currentTheme} />
+
+      <WalkieTalkieModal
+        isOpen={isWalkieOpen}
+        onClose={() => setIsWalkieOpen(false)}
+        theme={currentTheme}
+        ttsSettings={ttsSettings}
+        forceOffline={forceOffline}
+        initialLangA={sourceLang === 'auto' ? 'ar' : sourceLang}
+        initialLangB={targetLang}
+      />
 
       <DualConversationModal
         isOpen={isDualOpen}
