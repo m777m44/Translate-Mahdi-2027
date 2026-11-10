@@ -35,7 +35,14 @@ export interface SpeechHandlers {
 
 export interface SpeechSession {
   start: (langCode: string) => Promise<void>;
+  /** Stops and flushes the unfinished segment through onFinal. */
   stop: () => void;
+  /**
+   * Stops WITHOUT flushing anything — used to silence the mic while TTS is
+   * speaking (avoids the app transcribing its own voice) or when a half
+   * sentence must be discarded.
+   */
+  cancel: () => void;
   readonly kind: 'native' | 'web';
   /** Locale the recogniser is currently decoding (e.g. 'ar', 'en'). */
   readonly langCode: string;
@@ -190,6 +197,15 @@ export async function createSpeechSession(handlers: SpeechHandlers): Promise<Spe
             handles.forEach((h) => h.remove());
             handles.length = 0;
           },
+          cancel() {
+            desired = false;
+            stopped = true;
+            clearRestart();
+            lastPartial = '';          // discard the half phrase
+            Speech.stop().catch(() => undefined);
+            handles.forEach((h) => h.remove());
+            handles.length = 0;
+          },
         };
       }
     } catch (err) {
@@ -322,6 +338,17 @@ export async function createSpeechSession(handlers: SpeechHandlers): Promise<Spe
       commitInterim();
       try {
         recognition.stop();
+      } catch {
+        /* already stopped */
+      }
+    },
+    cancel() {
+      desired = false;
+      stopped = true;
+      clearRestart();
+      pendingInterim = '';       // discard the half phrase
+      try {
+        recognition.abort();
       } catch {
         /* already stopped */
       }

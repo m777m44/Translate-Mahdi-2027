@@ -66,6 +66,17 @@ class TextToSpeech {
     return LANG_BCP47_MAP[lang] || lang || 'ar-SA';
   }
 
+  /**
+   * Loads the device voice list ahead of time. The live/walkie-talkie mode
+   * calls this when it opens so the first reply is spoken immediately instead
+   * of waiting up to 2s for the voice list.
+   */
+  async warmUp(): Promise<void> {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    this.loadVoices();
+    if (!this.ready) await this.waitForVoices();
+  }
+
   /** Speaks `text` in `lang` (app language code or a BCP-47 tag). */
   async speak(text: string, lang: string, rate = 1, pitch = 1): Promise<void> {
     if (!text || !text.trim()) {
