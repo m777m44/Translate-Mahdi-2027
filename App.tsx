@@ -25,6 +25,8 @@ import { SettingsModal } from './components/SettingsModal.tsx';
 import { OfflinePacksModal } from './components/OfflinePacksModal.tsx';
 import { DualConversationModal } from './components/DualConversationModal.tsx';
 import { WalkieTalkieModal } from './components/WalkieTalkieModal.tsx';
+import { UpdateDialog } from './components/UpdateDialog.tsx';
+import { checkForUpdate, UpdateInfo, APP_VERSION } from './updater.ts';
 import { FloatingTranslateWindow } from './components/FloatingTranslateWindow.tsx';
 import { ImageTranslateModal } from './components/ImageTranslateModal.tsx';
 import { ZoomModal } from './components/ZoomModal.tsx';
@@ -110,6 +112,9 @@ export const App: React.FC = () => {
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [isDualOpen, setIsDualOpen] = useState(false);
   const [isWalkieOpen, setIsWalkieOpen] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   // ── Voice input ─────────────────────────────────────────────────────────
   const [isListening, setIsListening] = useState(false);
@@ -216,6 +221,7 @@ export const App: React.FC = () => {
     const closers: Array<[boolean, () => void]> = [
       [isDualOpen, () => setIsDualOpen(false)],
       [isWalkieOpen, () => setIsWalkieOpen(false)],
+      [isUpdateOpen, () => setIsUpdateOpen(false)],
       [isImageModalOpen, () => setIsImageModalOpen(false)],
       [isFloatingOpen, () => setIsFloatingOpen(false)],
       [isThemeGalleryOpen, () => setIsThemeGalleryOpen(false)],
@@ -530,6 +536,45 @@ export const App: React.FC = () => {
     });
   }, [sourceLang, detectedLangCode, isListening, beginSpeech]);
 
+  // ── In-app updater ──────────────────────────────────────────────────────
+  // Checks GitHub for a newer release: once shortly after launch (silent
+  // unless something is available) and on demand from the settings sheet.
+  const runUpdateCheck = useCallback(async (manual = false) => {
+    if (checkingUpdate) return;
+    setCheckingUpdate(true);
+    try {
+      const info = await checkForUpdate();
+      if (info?.available) {
+        setUpdateInfo(info);
+        setIsUpdateOpen(true);
+      } else if (manual) {
+        showToast('أنت تستخدم أحدث إصدار ✓');
+      }
+    } finally {
+      setCheckingUpdate(false);
+    }
+  }, [checkingUpdate, showToast]);
+
+  useEffect(() => {
+    // First launch of the day only, and never spam: the dialog shows once per
+    // release version and stays dismissed afterwards.
+    const KEY = 'mahdi_last_update_prompt';
+    const timer = window.setTimeout(async () => {
+      try {
+        const info = await checkForUpdate();
+        if (!info?.available) return;
+        const seen = localStorage.getItem(KEY);
+        if (seen === info.versionName) return;
+        localStorage.setItem(KEY, info.versionName || '');
+        setUpdateInfo(info);
+        setIsUpdateOpen(true);
+      } catch {
+        /* offline: nothing to do */
+      }
+    }, 3500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   // ── Small shared actions ────────────────────────────────────────────────
   // Robust local TTS: cancels previous speech, waits for device voices, and
   // always uses the freshest text (no stale closures) — works before and
@@ -708,14 +753,14 @@ export const App: React.FC = () => {
       <div className="w-full flex-1 flex flex-col p-3 sm:p-5 md:p-6 max-w-3xl mx-auto">
         {/* ── Header ─────────────────────────────────────────────────── */}
         <header
-          className="mt-surface-soft w-full flex items-center justify-between gap-2 mb-3 px-3 py-2 border"
+          className="mt-surface-soft mt-header"
           style={{ borderColor: 'var(--mt-border)', borderRadius: 'var(--mt-radius)' }}
         >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <img src="/icons/icon-192.png" alt="Translate Mahdi 2027" className="w-9 h-9 rounded-xl shadow shrink-0" />
-            <div className="min-w-0">
-              <h1 className="text-sm sm:text-base font-extrabold mt-heading truncate leading-tight">مهدي للترجمة 2027</h1>
-              <p className="text-[9.5px] mt-subtext font-semibold truncate flex items-center gap-1">
+          <div className="mt-header-brand">
+            <img src="/icons/icon-192.png" alt="Translate Mahdi 2027" className="mt-header-logo" />
+            <div className="mt-header-text">
+              <h1 className="mt-header-title">مهدي للترجمة 2027</h1>
+              <p className="mt-header-sub">
                 {offlineActive ? <WifiOff size={10} /> : <Wifi size={10} />}
                 {offlineActive ? 'وضع بدون إنترنت' : 'ترجمة فورية'}
               </p>
@@ -723,7 +768,7 @@ export const App: React.FC = () => {
           </div>
 
           {/* Ordered horizontal top bar: icon + label, labels hide on phones */}
-          <div className="flex items-center gap-1 sm:gap-1.5">
+          <div className="mt-header-actions">
             <button onClick={openFloating} className="mt-topbar-btn" title="النافذة العائمة فوق التطبيقات" aria-label="النافذة العائمة">
               <SquareStack size={17} />
               <span className="mt-topbar-label">عائمة</span>
@@ -742,8 +787,8 @@ export const App: React.FC = () => {
 
         <main className="w-full flex flex-col gap-3 flex-1">
           {/* ── Language selector pill ──────────────────────────────── */}
-          <div className="mt-glass rounded-full px-2 py-1.5 flex items-center justify-between gap-1">
-            <div className="flex-1 flex items-center justify-center min-w-0">
+          <div className="mt-glass mt-langbar">
+            <div className="mt-langbar-side">
               <LanguageSelectDropdown
                 label="من"
                 value={sourceLang}
@@ -756,13 +801,13 @@ export const App: React.FC = () => {
             </div>
             <button
               onClick={swapLanguages}
-              className="mt-touch-btn mt-icon-btn rounded-full shrink-0"
+              className="mt-touch-btn mt-icon-btn mt-langbar-swap"
               title="عكس اللغتين"
               aria-label="عكس اللغتين"
             >
               <ArrowRightLeft size={17} />
             </button>
-            <div className="flex-1 flex items-center justify-center min-w-0">
+            <div className="mt-langbar-side">
               <LanguageSelectDropdown
                 label="إلى"
                 value={targetLang}
@@ -865,38 +910,37 @@ export const App: React.FC = () => {
             </section>
           )}
 
-          {/* ── Bottom action dock: camera · mic · conversation ─────── */}
-          <div className="mt-auto pt-3 mt-safe-bottom-pad flex flex-col items-center gap-2.5 w-full">
-            <div className="flex items-center justify-center gap-8 sm:gap-14 w-full">
-              <div className="flex flex-col items-center gap-1.5">
+          {/* ── Bottom action dock: camera · mic · live · conversation ───
+              Plain-CSS grid (.mt-dock-*) so the four actions always form one
+              tidy row with equal cells and labels underneath. */}
+          <div className="mt-dock mt-safe-bottom-pad">
+            <div className="mt-dock-row">
+              <div className="mt-dock-item">
                 <button onClick={() => setIsImageModalOpen(true)}
-                  className="mt-glass mt-icon-btn w-12 h-12 sm:w-14 sm:h-14 hover:scale-105 active:scale-95"
-                  title="ترجمة الصور والكاميرا">
+                  className="mt-glass mt-icon-btn mt-dock-action"
+                  title="ترجمة الصور والكاميرا"
+                  aria-label="ترجمة الصور والكاميرا">
                   <Camera size={22} />
                 </button>
-                <span className="text-[10px] sm:text-[11px] font-semibold opacity-80 whitespace-nowrap">الكاميرا</span>
+                <span className="mt-dock-label">الكاميرا</span>
               </div>
 
-              <div className="flex flex-col items-center gap-1.5">
+              <div className="mt-dock-item">
                 <button onClick={toggleListening}
-                  className={`mt-icon-btn rounded-full hover:scale-105 active:scale-95 border ${isListening ? 'mt-listening' : 'mt-glass'}`}
+                  className={`mt-icon-btn mt-dock-action ${isListening ? 'mt-listening' : 'mt-glass'}`}
                   style={{
-                    width: 'clamp(3.75rem, 17vw, 4.5rem)',
-                    height: 'clamp(3.75rem, 17vw, 4.5rem)',
                     background: isListening ? 'var(--mt-danger)' : undefined,
                     color: isListening ? '#fff' : 'var(--mt-accent)',
                     borderColor: isListening ? 'var(--mt-danger)' : undefined,
                   }}
-                  title={isListening ? 'إيقاف الاستماع' : 'التحدث بالصوت'}>
-                  {isListening ? <MicOff size={28} /> : <Mic size={28} />}
+                  title={isListening ? 'إيقاف الاستماع' : 'التحدث بالصوت'}
+                  aria-label={isListening ? 'إيقاف الاستماع' : 'التحدث بالصوت'}>
+                  {isListening ? <MicOff size={26} /> : <Mic size={26} />}
                 </button>
-                <span className="text-[10px] sm:text-[11px] font-bold opacity-80 whitespace-nowrap">
-                  {isListening ? 'جاري الاستماع...' : 'صوت'}
-                </span>
+                <span className="mt-dock-label">{isListening ? 'يستمع…' : 'صوت'}</span>
               </div>
 
-              {/* Walkie-talkie: hands-free instant conversation (RTranslator mode) */}
-              <div className="flex flex-col items-center gap-1.5">
+              <div className="mt-dock-item">
                 <button onClick={() => setIsWalkieOpen(true)}
                   className="mt-chat-button mt-chat-button--live"
                   title="الوضع الفوري — محادثة بدون لمس الشاشة"
@@ -904,10 +948,10 @@ export const App: React.FC = () => {
                   <Zap size={18} />
                   <span className="label">فوري</span>
                 </button>
+                <span className="mt-dock-label">بدون لمس</span>
               </div>
 
-              {/* Conversation: compact horizontal pill, never vertical/cramped */}
-              <div className="flex flex-col items-center gap-1.5">
+              <div className="mt-dock-item">
                 <button onClick={() => setIsDualOpen(true)}
                   className="mt-chat-button"
                   title="محادثة صوتية ثنائية اللغة"
@@ -915,6 +959,7 @@ export const App: React.FC = () => {
                   <MessageSquareText size={18} />
                   <span className="label">محادثة</span>
                 </button>
+                <span className="mt-dock-label">ثنائية</span>
               </div>
             </div>
           </div>
@@ -942,9 +987,18 @@ export const App: React.FC = () => {
         onOpenPacks={() => { setIsSettingsOpen(false); setIsPacksOpen(true); }}
         historyCount={history.length}
         onClearHistory={clearHistory}
+        onCheckUpdate={() => { setIsSettingsOpen(false); void runUpdateCheck(true); }}
+        checkingUpdate={checkingUpdate}
+        appVersion={APP_VERSION}
       />
 
       <OfflinePacksModal isOpen={isPacksOpen} onClose={() => setIsPacksOpen(false)} theme={currentTheme} />
+
+      <UpdateDialog
+        isOpen={isUpdateOpen}
+        onClose={() => setIsUpdateOpen(false)}
+        info={updateInfo}
+      />
 
       <WalkieTalkieModal
         isOpen={isWalkieOpen}

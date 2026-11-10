@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 // Stable signing identity (android/keystore/keystore.properties + mahdi.p12).
 // Committed in-repo so every CI runner signs with the SAME key — otherwise
@@ -18,8 +19,8 @@ android {
         applicationId "com.mahdi.translatepro"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 14
-        versionName "5.3.0"
+        versionCode 15
+        versionName "5.4.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -38,6 +39,16 @@ android {
             }
         }
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+    // Kotlin must target the same JVM level as Java to avoid
+    // "Inconsistent JVM-target compatibility" build failures.
+    kotlinOptions {
+        jvmTarget = '21'
+    }
+
     buildTypes {
         debug {
             if (keystorePropsFile.exists()) {
@@ -70,6 +81,9 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    // نظام التحديث الداخلي (UpdateManager.kt) يحتاج Coroutines لعزل الشبكة
+    // عن خيط الواجهة ومنع ANR.
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
 }
 
 apply from: 'capacitor.build.gradle'

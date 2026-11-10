@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ThemeProvider } from './themeContext';
+import './styles/fonts.css';
+import './styles/tailwind.css';
 import './styles/app.css';
 
 const rootElement = document.getElementById('root');
