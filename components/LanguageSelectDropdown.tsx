@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Check,
   CheckCircle2,
@@ -298,9 +299,12 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
       )}
 
       {/* Full-screen opaque Google-Translate-style language page.
-          Structural positioning lives in plain CSS (.mt-backdrop etc.) so the
-          sheet can never collapse if the Tailwind runtime CDN lags. */}
-      {isOpen && (
+          Rendered through a portal into <body>: the trigger sits inside
+          .mt-glass/.mt-card, whose backdrop-filter + transform make them the
+          containing block for position:fixed — without the portal the sheet
+          would be trapped inside the language pill instead of covering the
+          whole screen. Structural positioning stays in plain CSS. */}
+      {isOpen && typeof document !== 'undefined' && createPortal(
         <div
           className="mt-backdrop"
           dir="rtl"
@@ -454,7 +458,8 @@ export const LanguageSelectDropdown: React.FC<LanguageSelectDropdownProps> = ({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

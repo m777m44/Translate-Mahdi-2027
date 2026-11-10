@@ -113,6 +113,15 @@ export const App: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [speechInterim, setSpeechInterim] = useState('');
   const speechSessionRef = useRef<SpeechSession | null>(null);
+  // The interim transcript also lives in a ref so a segment that ends (or a
+  // manual stop) can always flush it — no spoken word is ever dropped, even
+  // when the recogniser stops itself in the middle of dictation.
+  const speechInterimRef = useRef('');
+  const lastSpeechCommit = useRef<{ text: string; at: number }>({ text: '', at: 0 });
+  const speechBusyRef = useRef(false);
+  // Every dictation run gets a generation number: callbacks from a session that
+  // has already been replaced must never touch the live one.
+  const speechGenRef = useRef(0);
 
   // ── Refs ────────────────────────────────────────────────────────────────
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -389,43 +398,134 @@ export const App: React.FC = () => {
   };
 
   // ── Voice input (native plugin on Android, Web Speech API in browsers) ──
-  const toggleListening = useCallback(async () => {
-    if (isListening) {
-      speechSessionRef.current?.stop();
-      setIsListening(false);
-      if (speechInterim) {
-        setInputText((prev) => (prev ? `${prev.trim()} ${speechInterim}` : speechInterim));
-        setSpeechInterim('');
-      }
-      return;
-    }
+  const setInterim = useCallback((text: string) => {
+    speechInterimRef.current = text;
+    setSpeechInterim(text);
+  }, []);
 
-    const lang = sourceLang === 'auto' ? (detectedLangCode || 'ar') : sourceLang;
+  // Appends dictated text exactly once. The recogniser can deliver the same
+  // segment twice (commit on stop + flush on end), so an identical tail
+  // arriving within a moment is ignored instead of being duplicated.
+  const commitSpeech = useCallback((raw: string) => {
+    const text = raw.replace(/\s+/g, ' ').trim();
+    if (!text) return;
+    const now = Date.now();
+    const last = lastSpeechCommit.current;
+    if (last.text === text && now - last.at < 2000) return;
+    lastSpeechCommit.current = { text, at: now };
+    setInputText((prev) => {
+      const base = prev.trim();
+      if (!base) return text;
+      return `${base} ${text}`;
+    });
+  }, []);
+
+  const stopListening = useCallback(() => {
+    speechGenRef.current += 1;
+    speechSessionRef.current?.stop();
+    speechSessionRef.current = null;
+    speechBusyRef.current = false;
+    setIsListening(false);
+    const pending = speechInterimRef.current;
+    speechInterimRef.current = '';
+    setSpeechInterim('');
+    commitSpeech(pending);
+  }, [commitSpeech]);
+
+  /** Builds a session and starts continuous dictation in `lang`. */
+  const beginSpeech = useCallback(async (lang: string) => {
+    const generation = speechGenRef.current + 1;
+    speechGenRef.current = generation;
+    const isCurrent = () => speechGenRef.current === generation;
+
     const session = await createSpeechSession({
-      onPartial: (t) => setSpeechInterim(t),
+      onPartial: (t) => { if (isCurrent()) setInterim(t); },
       onFinal: (t) => {
-        setSpeechInterim('');
-        setInputText((prev) => (prev ? `${prev.trim()} ${t}` : t));
+        if (!isCurrent()) return;
+        setInterim('');
+        commitSpeech(t);
       },
-      onError: (m) => { setError(m); setIsListening(false); },
-      onEnd: () => setIsListening(false),
+      onError: (m) => {
+        if (!isCurrent()) return;
+        setIsListening(false);
+        setError(m);
+      },
+      onEnd: () => {
+        if (!isCurrent()) return;
+        setIsListening(false);
+        // The engine stopped by itself: flush the last unfinished segment
+        // instead of dropping what the user just said.
+        const pending = speechInterimRef.current;
+        speechInterimRef.current = '';
+        setSpeechInterim('');
+        commitSpeech(pending);
+      },
+      onStart: () => { if (isCurrent()) setIsListening(true); },
     });
 
     if (!session) {
-      setError('التعرف الصوتي غير مدعوم على هذا الجهاز أو المتصفح.');
-      return;
+      if (isCurrent()) setError('التعرف الصوتي غير مدعوم على هذا الجهاز أو المتصفح.');
+      return false;
     }
     try {
-      await session.start(lang);
+      if (!isCurrent()) return false;
       speechSessionRef.current = session;
+      await session.start(lang);
+      if (!isCurrent()) return false;
       setIsListening(true);
       setError(null);
-      showToast('جاري الاستماع لصوتك الآن...');
+      return true;
     } catch {
-      setIsListening(false);
-      setError('تعذّر بدء التعرف الصوتي. تحقق من إذن الميكروفون.');
+      if (isCurrent()) {
+        speechSessionRef.current = null;
+        setIsListening(false);
+        setError('تعذّر بدء التعرف الصوتي. تحقق من إذن الميكروفون.');
+      }
+      return false;
     }
-  }, [isListening, speechInterim, sourceLang, detectedLangCode, showToast]);
+  }, [setInterim, commitSpeech]);
+
+  const toggleListening = useCallback(async () => {
+    if (speechBusyRef.current) return;   // ignore rapid double taps
+    if (isListening) {
+      stopListening();
+      return;
+    }
+    const lang = sourceLang === 'auto' ? (detectedLangCode || 'ar') : sourceLang;
+    speechBusyRef.current = true;
+    try {
+      const started = await beginSpeech(lang);
+      if (started) {
+        showToast('جاري الاستماع... تحدّث بحرية والميكروفون يلتقط كل كلمة فوراً');
+      }
+    } finally {
+      speechBusyRef.current = false;
+    }
+  }, [isListening, stopListening, beginSpeech, sourceLang, detectedLangCode, showToast]);
+
+  // Leaving the screen (or the app) must never leave the microphone running.
+  useEffect(() => () => {
+    speechGenRef.current += 1;   // ignore callbacks from the dying session
+    speechSessionRef.current?.stop();
+    speechSessionRef.current = null;
+  }, []);
+
+  // Switching the source language mid-dictation restarts the recogniser in the
+  // new locale so speech is not decoded with the wrong language model.
+  useEffect(() => {
+    if (!isListening || speechBusyRef.current) return;
+    const session = speechSessionRef.current;
+    if (!session) return;
+    const next = sourceLang === 'auto' ? (detectedLangCode || 'ar') : sourceLang;
+    if (session.langCode === next) return;
+    speechGenRef.current += 1;   // silence the session being replaced
+    session.stop();
+    speechSessionRef.current = null;
+    speechBusyRef.current = true;
+    void beginSpeech(next).finally(() => {
+      speechBusyRef.current = false;
+    });
+  }, [sourceLang, detectedLangCode, isListening, beginSpeech]);
 
   // ── Small shared actions ────────────────────────────────────────────────
   // Robust local TTS: cancels previous speech, waits for device voices, and

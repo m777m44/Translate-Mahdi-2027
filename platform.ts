@@ -27,23 +27,42 @@ export interface SpeechHandlers {
   onFinal: (text: string) => void;
   /** Human-readable Arabic error message. */
   onError: (message: string) => void;
-  /** Listening stopped for any reason. */
+  /** Listening stopped for any reason (only when the user session is over). */
   onEnd: () => void;
+  /** A recognition segment (re)started and audio is flowing again. */
+  onStart?: () => void;
 }
 
 export interface SpeechSession {
   start: (langCode: string) => Promise<void>;
   stop: () => void;
   readonly kind: 'native' | 'web';
+  /** Locale the recogniser is currently decoding (e.g. 'ar', 'en'). */
+  readonly langCode: string;
 }
 
 /**
- * Creates the best speech recogniser available on this device:
- *  - native Android: @capacitor-community/speech-recognition (works inside the
- *    Capacitor WebView where the Web Speech API does not exist)
- *  - browser/PWA: webkitSpeechRecognition / SpeechRecognition
- * Returns null when speech input is unsupported.
+ * Continuous dictation engine.
+ *
+ * Both Android's SpeechRecognizer and Chrome's Web Speech API stop on their own
+ * after a short silence — which is why a single tap used to capture one phrase
+ * and then throw the rest away. This module keeps a "user still wants to talk"
+ * flag and transparently restarts the recogniser at every segment boundary, so
+ * speech keeps flowing and nothing said is dropped:
+ *
+ *  - the newest partial is always surfaced immediately (zero perceived lag);
+ *  - a segment that ends is committed through onFinal() instead of vanishing;
+ *  - restart is quick (~140ms) and guarded against storms / dead microphones.
  */
+
+const RESTART_DELAY_MS = 140;
+const MAX_SILENT_RESTARTS = 12;
+
+/** Collapses whitespace so committed text never doubles up on restart. */
+function tidy(text: string): string {
+  return text.replace(/\s+/g, ' ').trim();
+}
+
 export async function createSpeechSession(handlers: SpeechHandlers): Promise<SpeechSession | null> {
   if (isNativeApp()) {
     try {
@@ -60,31 +79,116 @@ export async function createSpeechSession(handlers: SpeechHandlers): Promise<Spe
         }
 
         const handles: Array<{ remove: () => void }> = [];
+        let desired = false;          // user wants to keep dictating
+        let lastPartial = '';         // newest transcript of the current segment
+        let restartTimer: number | null = null;
+        let silentRestarts = 0;
+        let stopped = false;
+
+        const clearRestart = () => {
+          if (restartTimer !== null) {
+            window.clearTimeout(restartTimer);
+            restartTimer = null;
+          }
+        };
+
+        const commitSegment = () => {
+          const text = tidy(lastPartial);
+          lastPartial = '';
+          if (text) handlers.onFinal(text);
+        };
+
+        const doStart = async (lang: string) => {
+          if (!desired || stopped) return;
+          try {
+            await Speech.start({
+              language: LANG_BCP47_MAP[lang] || lang || 'ar',
+              partialResults: true,
+              popup: false,
+              maxResults: 1,
+            });
+            handlers.onStart?.();
+          } catch (err) {
+            // A session that is still shutting down rejects the next start —
+            // retry once after the normal gap instead of giving up.
+            console.warn('speech restart failed:', err);
+            if (desired && !stopped) scheduleRestart(260);
+          }
+        };
+
+        const scheduleRestart = (delay = RESTART_DELAY_MS) => {
+          clearRestart();
+          restartTimer = window.setTimeout(() => {
+            restartTimer = null;
+            void doStart(currentLang);
+          }, delay);
+        };
+
+        let currentLang = 'ar';
+
         handles.push(
           await Speech.addListener('partialResults', (data: { matches?: string[] }) => {
-            const text = data.matches?.[0]?.trim();
-            if (text) handlers.onPartial(text);
+            const text = tidy(data.matches?.[0] || '');
+            if (!text) return;
+            // A longer/rewritten partial replaces the previous one; the engine
+            // only reports what the current segment contains, so no dupes.
+            if (text === lastPartial) return;
+            lastPartial = text;
+            silentRestarts = 0;
+            handlers.onPartial(text);
           }),
         );
+
         handles.push(
-          await Speech.addListener('listeningState', (data: { status: string }) => {
-            if (data.status === 'ended' || data.status === 'stopped') handlers.onEnd();
+          await Speech.addListener('listeningState', (data: { status?: string }) => {
+            const status = data.status;
+            if (status === 'started') {
+              handlers.onStart?.();
+              return;
+            }
+            if (status !== 'stopped' && status !== 'ended') return;
+
+            // Segment finished: keep every word, then immediately keep the mic
+            // open again if the user is still in dictation mode.
+            const hadSpeech = Boolean(tidy(lastPartial));
+            commitSegment();
+            if (!desired || stopped) {
+              handlers.onEnd();
+              return;
+            }
+            silentRestarts = hadSpeech ? 0 : silentRestarts + 1;
+            if (silentRestarts > MAX_SILENT_RESTARTS) {
+              // Nothing has been heard for a long time: stop instead of
+              // draining the battery with an endless restart loop.
+              desired = false;
+              handlers.onEnd();
+              return;
+            }
+            scheduleRestart(silentRestarts > 3 ? 320 : RESTART_DELAY_MS);
           }),
         );
 
         return {
           kind: 'native',
+          get langCode() {
+            return currentLang;
+          },
           async start(langCode: string) {
-            await Speech.start({
-              language: LANG_BCP47_MAP[langCode] || langCode || 'ar',
-              partialResults: true,
-              popup: false,
-              maxResults: 1,
-            });
+            currentLang = langCode;
+            desired = true;
+            stopped = false;
+            lastPartial = '';
+            silentRestarts = 0;
+            await doStart(langCode);
           },
           stop() {
+            desired = false;
+            stopped = true;
+            clearRestart();
+            commitSegment();
             Speech.stop().catch(() => undefined);
             handles.forEach((h) => h.remove());
+            handles.length = 0;
           },
         };
       }
@@ -102,39 +206,125 @@ export async function createSpeechSession(handlers: SpeechHandlers): Promise<Spe
   recognition.continuous = true;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
-  let finalTranscript = '';
+
+  let desired = false;
+  let stopped = false;
+  let lang = 'ar';
+  let pendingInterim = '';
+  let restartTimer: number | null = null;
+  let silentRestarts = 0;
+
+  const clearRestart = () => {
+    if (restartTimer !== null) {
+      window.clearTimeout(restartTimer);
+      restartTimer = null;
+    }
+  };
+
+  const commitInterim = () => {
+    const text = tidy(pendingInterim);
+    pendingInterim = '';
+    if (text) handlers.onFinal(text);
+  };
+
+  const scheduleRestart = (delay = RESTART_DELAY_MS) => {
+    clearRestart();
+    restartTimer = window.setTimeout(() => {
+      restartTimer = null;
+      if (!desired || stopped) return;
+      try {
+        recognition.lang = LANG_BCP47_MAP[lang] || lang || 'ar';
+        recognition.start();
+        handlers.onStart?.();
+      } catch {
+        // "already started" / transient invalid-state: try once more later.
+        if (desired && !stopped) scheduleRestart(300);
+      }
+    }, delay);
+  };
 
   recognition.onresult = (event: any) => {
-    let interim = '';
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const chunk = event.results[i][0].transcript;
-      if (event.results[i].isFinal) {
-        finalTranscript += `${finalTranscript ? ' ' : ''}${chunk.trim()}`;
-        handlers.onFinal(chunk.trim());
+    let interimText = '';
+    for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      const result = event.results[i];
+      const chunk = tidy(result?.[0]?.transcript || '');
+      if (!chunk) continue;
+      if (result.isFinal) {
+        // Commit immediately: this is the moment the engine is most accurate.
+        pendingInterim = '';
+        silentRestarts = 0;
+        handlers.onFinal(chunk);
       } else {
-        interim += chunk;
+        interimText = interimText ? `${interimText} ${chunk}` : chunk;
       }
     }
-    if (interim.trim()) handlers.onPartial(interim.trim());
-  };
-  recognition.onerror = (event: any) => {
-    if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-      handlers.onError('تم رفض إذن الوصول للميكروفون. يرجى السماح بالوصول في المتصفح.');
-    } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
-      console.warn('Speech recognition error:', event.error);
+    if (interimText) {
+      pendingInterim = interimText;
+      silentRestarts = 0;
+      handlers.onPartial(interimText);
     }
   };
-  recognition.onend = () => handlers.onEnd();
+
+  recognition.onerror = (event: any) => {
+    const err = event?.error;
+    if (err === 'not-allowed' || err === 'service-not-allowed') {
+      desired = false;
+      handlers.onError('تم رفض إذن الوصول للميكروفون. يرجى السماح بالوصول في المتصفح.');
+      return;
+    }
+    if (err === 'audio-capture') {
+      desired = false;
+      handlers.onError('لم يتم العثور على ميكروفون متاح على هذا الجهاز.');
+      return;
+    }
+    // 'no-speech' / 'aborted' / network blips are normal between phrases: the
+    // onend restart below handles them without bothering the user.
+    if (err !== 'no-speech' && err !== 'aborted') {
+      console.warn('Speech recognition error:', err);
+    }
+  };
+
+  recognition.onend = () => {
+    // Never lose the tail of a phrase: commit whatever is still interim.
+    commitInterim();
+    if (desired && !stopped) {
+      silentRestarts += 1;
+      if (silentRestarts > MAX_SILENT_RESTARTS) {
+        desired = false;
+        handlers.onEnd();
+        return;
+      }
+      scheduleRestart(silentRestarts > 3 ? 320 : RESTART_DELAY_MS);
+      return;
+    }
+    handlers.onEnd();
+  };
 
   return {
     kind: 'web',
+    get langCode() {
+      return lang;
+    },
     async start(langCode: string) {
-      finalTranscript = '';
+      lang = langCode;
+      desired = true;
+      stopped = false;
+      pendingInterim = '';
+      silentRestarts = 0;
+      clearRestart();
       recognition.lang = LANG_BCP47_MAP[langCode] || langCode || 'ar';
       recognition.start();
     },
     stop() {
-      try { recognition.stop(); } catch { /* already stopped */ }
+      desired = false;
+      stopped = true;
+      clearRestart();
+      commitInterim();
+      try {
+        recognition.stop();
+      } catch {
+        /* already stopped */
+      }
     },
   };
 }
